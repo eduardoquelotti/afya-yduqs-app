@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Afya + Yduqs">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FAF7F5">
+<title>RI Control · Afya + Yduqs</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#FAF7F5; --surface:#FFFFFF; --surface-2:#F4F0EE; --surface-3:#ECE6E4;
+  --border:#E3DCDA; --border-soft:#EDE7E5;
+  --text:#221B20; --text-dim:#6E6570; --text-faint:#9C93A0;
+  --accent:#D31C5B; --accent-dim:#A81548; --accent-soft:rgba(211,28,91,.08);
+  --teal:#0D9488; --teal-soft:rgba(13,148,136,.10);
+  --yd:#1E3A8A; --yd-soft:rgba(30,58,138,.08);
+  --danger:#DC2626; --danger-soft:rgba(220,38,38,.10);
+  --warn:#D97706; --warn-soft:rgba(217,118,6,.12);
+  --radius:10px;
+  --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI Variable Display","Segoe UI",Arial,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",Arial,sans-serif;
+  --font-mono:ui-monospace,"SF Mono","Cascadia Code",Consolas,Menlo,Monaco,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;
+  background-image:radial-gradient(circle at 15% 0%, rgba(211,28,91,.05), transparent 45%),radial-gradient(circle at 100% 30%, rgba(13,148,136,.04), transparent 40%);
+}
+[hidden]{display:none!important;}
+::selection{background:var(--accent-soft);color:var(--accent);}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:10px;}
+
+/* ---------- login ---------- */
+#loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;}
+.login{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border-soft);border-radius:14px;padding:30px 28px;box-shadow:0 14px 40px rgba(60,30,45,.08);}
+.login h1{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:4px;}
+.login p.sub{color:var(--text-faint);font-size:12.5px;margin-bottom:20px;line-height:1.5;}
+.login .btn{width:100%;justify-content:center;padding:12px;font-size:14px;margin-top:6px;}
+.login-err{color:var(--danger);font-size:12.5px;margin-top:12px;min-height:18px;}
+.shake{animation:shake .35s;}
+@keyframes shake{20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
+
+/* ---------- shell ---------- */
+#appView{display:flex;min-height:100vh;}
+.sidebar{width:236px;flex-shrink:0;background:linear-gradient(180deg,var(--surface),#F3EEF1);border-right:1px solid var(--border-soft);
+  display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 22px 8px;border-bottom:1px solid var(--border-soft);margin-bottom:16px;}
+.login .brand{padding:0 0 22px;margin-bottom:22px;}
+.brand-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-dim));
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;color:#fff;font-size:14px;flex-shrink:0;}
+.brand-text .t1{font-family:var(--font-display);font-weight:700;font-size:15px;}
+.brand-text .t2{font-size:11px;color:var(--text-faint);font-family:var(--font-mono);letter-spacing:.5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--text-dim);font-size:13.5px;font-weight:500;transition:.12s;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;opacity:.8;}
+.nav-item:hover{background:var(--surface-2);color:var(--text);}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);}
+.sidebar-foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:8px;}
+.who{font-size:12px;color:var(--text-dim);padding:0 4px 4px;line-height:1.4;}
+.who strong{color:var(--text);display:block;font-size:13px;}
+.ghost-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-body);font-size:12px;
+  padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;transition:.12s;}
+.ghost-btn:hover{border-color:var(--accent-dim);color:var(--text);}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
+.sticky-header{position:sticky;top:0;z-index:20;}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 28px;border-bottom:1px solid var(--border-soft);background:rgba(255,255,255,.8);backdrop-filter:blur(6px);}
+.topbar h1{font-family:var(--font-display);font-size:19px;font-weight:600;}
+.topbar .sub{color:var(--text-faint);font-size:12.5px;margin-top:2px;}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.ticker{display:flex;font-family:var(--font-mono);font-size:11.5px;border:1px solid var(--border-soft);border-radius:8px;overflow:hidden;background:var(--surface);}
+.ticker div{padding:8px 14px;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;gap:2px;min-width:96px;}
+.ticker div:last-child{border-right:none;}
+.ticker .k{color:var(--text-faint);font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;}
+.ticker .v{color:var(--accent);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;}
+.tabs-bar-wrap{border-bottom:1px solid var(--border-soft);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);}
+.tabs-bar{display:flex;gap:2px;padding:0 28px;overflow-x:auto;}
+.tabs-bar .nav-item{padding:12px 14px;border-radius:0;border-bottom:2px solid transparent;white-space:nowrap;font-size:13px;}
+.tabs-bar .nav-item.active{background:none;color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+
+.content{padding:26px 28px 60px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;}}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.panel-head h2{font-family:var(--font-display);font-size:17px;font-weight:600;}
+.panel-head p{color:var(--text-faint);font-size:12.5px;margin-top:3px;max-width:640px;line-height:1.5;}
+
+.card{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
+.card-title{font-family:var(--font-display);font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.card-title .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+.grid{display:grid;gap:14px;}
+.grid > *{min-width:0;}
+.grid.cols-2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+.grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+.grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr));}
+@media(max-width:1000px){.grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr;}}
+
+.dm-label{color:var(--text-faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;font-family:var(--font-mono);display:flex;align-items:center;gap:8px;}
+.dm-value{font-family:var(--font-display);font-size:24px;font-weight:700;margin:8px 0 4px;font-variant-numeric:tabular-nums;}
+.dm-foot{color:var(--text-faint);font-size:11.5px;}
+
+label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:5px;font-weight:500;}
+input,select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:9px 11px;border-radius:7px;font-family:var(--font-body);font-size:13px;outline:none;}
+input:focus,select:focus{border-color:var(--accent-dim);}
+input:disabled,select:disabled{opacity:.65;cursor:not-allowed;}
+.field{margin-bottom:12px;}
+.hint{color:var(--text-faint);font-size:11px;margin-top:4px;line-height:1.5;}
+.inline{display:flex;gap:8px;align-items:center;}
+
+.btn{background:var(--accent);color:#fff;border:none;font-weight:600;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-family:var(--font-body);
+  display:inline-flex;align-items:center;gap:7px;transition:filter .12s, transform .12s;white-space:nowrap;}
+.btn:hover{filter:brightness(1.08);}
+.btn:active{transform:scale(.98);}
+.btn:focus-visible,.ghost-btn:focus-visible,.icon-btn:focus-visible,.nav-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.btn.secondary{background:var(--surface-3);color:var(--text);border:1px solid var(--border);}
+.btn.danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(220,38,38,.3);}
+.btn.sm{padding:5px 10px;font-size:11.5px;border-radius:6px;}
+.btn.big{padding:11px 20px;font-size:13.5px;letter-spacing:.4px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{text-align:left;color:var(--text-faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--border-soft);font-family:var(--font-mono);white-space:nowrap;}
+td{padding:10px;border-bottom:1px solid var(--border-soft);vertical-align:middle;white-space:nowrap;}
+tr:hover td{background:var(--surface-2);}
+.table-wrap{overflow-x:auto;border-radius:8px;}
+.num-cell{font-family:var(--font-mono);text-align:right;font-variant-numeric:tabular-nums;}
+th.num{text-align:right;}
+.sticky-col{position:sticky;left:0;background:var(--surface);z-index:2;box-shadow:1px 0 0 var(--border-soft);}
+tr:hover td.sticky-col{background:var(--surface-2);}
+
+table.combo td{padding:12px 10px;}
+table.combo tr.total td{font-weight:700;border-top:2px solid var(--border);background:var(--surface-2);}
+table.combo input.div-input{width:120px;text-align:right;font-family:var(--font-mono);padding:6px 8px;background:var(--surface);border-color:var(--accent-dim);}
+table.combo input.div-input.changed{background:var(--warn-soft);border-color:var(--warn);}
+.co-cell{display:flex;align-items:center;gap:10px;font-weight:600;}
+.logo-slot{height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;}
+.logo-slot img{max-height:26px;max-width:90px;object-fit:contain;}
+.mono-chip{font-family:var(--font-display);font-weight:800;font-size:10.5px;letter-spacing:.8px;padding:5px 8px;border-radius:6px;color:#fff;}
+.mono-chip.afya{background:var(--accent);}
+.mono-chip.yduqs{background:var(--yd);}
+
+.ratio-bar{height:10px;border-radius:10px;overflow:hidden;display:flex;background:var(--surface-3);margin-top:6px;}
+.ratio-bar .y{background:var(--yd);}
+.ratio-bar .a{background:var(--accent);}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--text-faint);margin-top:6px;flex-wrap:wrap;}
+.legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+.legend .ly::before{background:var(--yd);} .legend .la::before{background:var(--accent);}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10.5px;font-weight:600;font-family:var(--font-mono);}
+.badge.ok{background:var(--teal-soft);color:var(--teal);}
+.badge.warn{background:var(--warn-soft);color:var(--warn);}
+.badge.sim{background:var(--accent-soft);color:var(--accent);}
+.badge.off{background:var(--surface-3);color:var(--text-faint);}
+.badge.admin{background:var(--yd-soft);color:var(--yd);}
+.icon-btn{background:none;border:1px solid var(--border);color:var(--text-dim);min-width:28px;height:28px;padding:0 8px;border-radius:6px;cursor:pointer;font-size:12px;font-family:var(--font-body);}
+.icon-btn:hover{border-color:var(--accent-dim);color:var(--accent);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-faint);white-space:normal;line-height:1.6;}
+.status-line{font-size:11.5px;color:var(--text-faint);margin-top:10px;line-height:1.6;}
+.status-line .err{color:var(--danger);}
+.toast{position:fixed;bottom:calc(22px + env(safe-area-inset-bottom,0px));right:22px;left:auto;background:var(--surface-3);border:1px solid var(--border);color:var(--text);padding:12px 18px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 8px 24px rgba(60,30,45,.15);max-width:min(420px,calc(100vw - 44px));}
+.modal-backdrop{position:fixed;inset:0;background:rgba(6,10,20,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:420px;padding:24px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-family:var(--font-display);font-size:16px;margin-bottom:12px;}
+.modal p{color:var(--text-dim);font-size:13px;line-height:1.6;}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+.modal-err{color:var(--danger);font-size:12.5px;margin-top:6px;min-height:16px;}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.toolbar select,.toolbar input{width:auto;min-width:150px;}
+.toolbar .spacer{flex:1;}
+.muted{color:var(--text-faint);}
+
+@media (max-width:1024px){
+  .sidebar{display:none;}
+  .topbar{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top,0px));}
+  .tabs-bar{padding:0 18px;}
+  .content{padding:18px 18px 40px;}
+  .ticker div{min-width:78px;padding:7px 10px;}
+}
+@media (max-width:600px){
+  .ticker{flex-wrap:wrap;width:100%;}
+  .topbar-right{width:100%;}
+  .btn.big{width:100%;justify-content:center;}
+  .dm-value{font-size:20px;}
+}
+@media (pointer:coarse){
+  .icon-btn{min-width:36px;height:36px;}
+  table.combo input.div-input{font-size:16px;padding:8px;}
+  input,select{font-size:16px;}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginView" hidden>
+  <form class="login" id="loginForm" autocomplete="on">
+    <div class="brand">
+      <div class="brand-mark">RI</div>
+      <div class="brand-text"><div class="t1">RI Control</div><div class="t2">AFYA + YDUQS</div></div>
+    </div>
+    <h1>Entrar</h1>
+    <p class="sub">Use o usuário e a senha criados pelo administrador.</p>
+    <div class="field"><label for="loginUser">Usuário</label><input id="loginUser" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+    <div class="field"><label for="loginPass">Senha</label><input id="loginPass" type="password" autocomplete="current-password"></div>
+    <button class="btn" id="btnLogin" type="submit">Entrar</button>
+    <div class="login-err" id="loginErr"></div>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appView" hidden>
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">RI</div>
+      <div class="brand-text"><div class="t1">RI Control</div><div class="t2">AFYA + YDUQS</div></div>
+    </div>
+    <div id="sideNav">
+      <div class="nav-item active" data-tab="visao" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Combinação
+      </div>
+      <div class="nav-item" data-tab="historico" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        Histórico
+      </div>
+      <div class="nav-item" data-tab="usuarios" data-admin-only tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Usuários
+      </div>
+      <div class="nav-item" data-tab="config" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Configurações
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="who" id="whoBox"></div>
+      <button class="ghost-btn" data-action="password">🔑 Alterar minha senha</button>
+      <button class="ghost-btn" data-action="logout">⎋ Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sticky-header">
+      <div class="topbar">
+        <div>
+          <h1>Combinação Afya + Yduqs</h1>
+          <div class="sub">Market cap, dividendos esperados e relação de troca · R$ milhões</div>
+        </div>
+        <div class="topbar-right">
+          <div class="ticker" id="tickerBar"></div>
+          <button class="btn big" id="btnUpdate">↻ UPDATE</button>
+        </div>
+      </div>
+      <div class="tabs-bar-wrap">
+        <div class="tabs-bar" id="tabNav">
+          <div class="nav-item active" data-tab="visao" tabindex="0">Visão</div>
+          <div class="nav-item" data-tab="historico" tabindex="0">Histórico</div>
+          <div class="nav-item" data-tab="usuarios" data-admin-only tabindex="0">Usuários</div>
+          <div class="nav-item" data-tab="config" tabindex="0">Configurações</div>
+          <div class="nav-item" data-action="password" tabindex="0" style="margin-left:auto;">🔑 Senha</div>
+          <div class="nav-item" data-action="logout" tabindex="0">⎋ Sair</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- VISÃO -->
+      <div class="tab-panel active" id="tab-visao">
+        <div class="grid cols-4" id="kpiCards"></div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="card-title" style="justify-content:space-between;">
+            <span style="display:flex;align-items:center;gap:8px;"><span class="dot"></span>Market Cap × Dividendos</span>
+            <span style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn secondary sm" id="btnResetDiv">Restaurar dividendos padrão</button>
+              <button class="btn secondary sm" id="btnSaveSim">Registrar simulação no histórico</button>
+            </span>
+          </div>
+          <div class="table-wrap">
+            <table class="combo">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th class="num">Mkt Cap<br>Current</th>
+                  <th class="num">Expected<br>Dividends</th>
+                  <th class="num">Mkt Cap −<br>Dividends</th>
+                  <th class="num">Mkt Cap<br>(US$ mn)</th>
+                  <th class="num">Exchange<br>Rate</th>
+                </tr>
+              </thead>
+              <tbody id="comboBody"></tbody>
+            </table>
+          </div>
+          <p class="hint">Os dividendos podem ser editados para simular cenários (formato brasileiro, ex.: 1.160,0). Campo em amarelo = diferente do padrão. A simulação só entra no histórico ao clicar em "Registrar simulação".</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Exchange Ratio</div>
+          <div class="table-wrap">
+            <table class="combo">
+              <thead><tr><th></th><th class="num">Current</th><th class="num">Post Div. Distribution</th><th class="num">Δ (p.p.)</th></tr></thead>
+              <tbody id="ratioBody"></tbody>
+            </table>
+          </div>
+          <div class="grid cols-2" style="margin-top:14px;">
+            <div><div class="dm-label">Current</div><div class="ratio-bar" id="barCur"></div></div>
+            <div><div class="dm-label">Post Div. Distribution</div><div class="ratio-bar" id="barPost"></div></div>
+          </div>
+          <div class="legend"><span class="ly">Yduqs' Shareholders</span><span class="la">Afya's Shareholders</span></div>
+          <div class="status-line" id="statusLine"></div>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO -->
+      <div class="tab-panel" id="tab-historico">
+        <div class="panel-head">
+          <div>
+            <h2>Histórico de atualizações</h2>
+            <p>Todos os UPDATEs e simulações registrados, de todos os usuários, com data, hora e autor.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn secondary sm" id="btnReloadHist">↻ Recarregar</button>
+            <button class="btn secondary sm" id="btnExportCsv">⭳ Exportar CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <select id="histFilterTipo" aria-label="Filtrar por tipo">
+              <option value="">Todos os tipos</option>
+              <option value="update">Somente updates</option>
+              <option value="simulacao">Somente simulações</option>
+            </select>
+            <select id="histFilterUser" aria-label="Filtrar por usuário"><option value="">Todos os usuários</option></select>
+            <div class="spacer"></div>
+            <span class="muted" id="histCount" style="font-size:11.5px;"></span>
+          </div>
+          <div class="table-wrap"><table id="tblHist"></table></div>
+        </div>
+      </div>
+
+      <!-- USUÁRIOS (admin) -->
+      <div class="tab-panel" id="tab-usuarios">
+        <div class="panel-head">
+          <div>
+            <h2>Usuários</h2>
+            <p>Só você, como administrador, cria acessos. Usuários desativados não conseguem entrar, mas os registros deles continuam no histórico.</p>
+          </div>
+          <button class="btn" id="btnNovoUsuario">+ Novo usuário</button>
+        </div>
+        <div class="card"><div class="table-wrap"><table id="tblUsers"></table></div></div>
+      </div>
+
+      <!-- CONFIG -->
+      <div class="tab-panel" id="tab-config">
+        <div class="panel-head">
+          <div>
+            <h2>Configurações</h2>
+            <p id="cfgIntro">Valores usados por todos os usuários. Somente administradores podem alterar.</p>
+          </div>
+          <button class="btn" id="btnSaveCfg" data-admin-only>Salvar configurações</button>
+        </div>
+        <div class="grid cols-2">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span>Dividendos padrão (R$ milhões)</div>
+            <div class="grid cols-2">
+              <div class="field"><label for="cfgDivY">Yduqs</label><input id="cfgDivY" inputmode="decimal"></div>
+              <div class="field"><label for="cfgDivA">Afya</label><input id="cfgDivA" inputmode="decimal"></div>
+            </div>
+            <div class="hint">Valores que aparecem ao abrir o app e ao restaurar o padrão.</div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="dot"></span>Fontes de mercado</div>
+            <div class="grid cols-2">
+              <div class="field"><label for="cfgYdTicker">Ticker Yduqs (B3)</label><input id="cfgYdTicker"></div>
+              <div class="field"><label for="cfgAfTicker">Ticker Afya (NASDAQ)</label><input id="cfgAfTicker"></div>
+              <div class="field"><label for="cfgYdShares">Ações Yduqs (mn) — opcional</label><input id="cfgYdShares" inputmode="decimal" placeholder="vazio = market cap da brapi"></div>
+              <div class="field"><label for="cfgAfShares">Ações Afya (mn) — opcional</label><input id="cfgAfShares" inputmode="decimal" placeholder="vazio = número da Finnhub"></div>
+            </div>
+            <div class="field"><label for="cfgPtaxTipo">Cotação PTAX</label>
+              <select id="cfgPtaxTipo"><option value="venda">PTAX venda</option><option value="compra">PTAX compra</option></select></div>
+            <div class="hint">Os tokens da brapi e da Finnhub ficam guardados no servidor e não aparecem nesta página.</div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="dot"></span>Logos</div>
+            <div class="grid cols-2">
+              <div class="field"><label for="logoAfyaFile">Logo Afya (PNG/SVG, até 300 KB)</label><input type="file" id="logoAfyaFile" accept="image/*" data-admin-only>
+                <div style="margin-top:8px;" id="prevAfya"></div></div>
+              <div class="field"><label for="logoYdFile">Logo Yduqs (PNG/SVG, até 300 KB)</label><input type="file" id="logoYdFile" accept="image/*" data-admin-only>
+                <div style="margin-top:8px;" id="prevYd"></div></div>
+            </div>
+            <button class="btn secondary sm" id="btnClearLogos" data-admin-only>Remover logos</button>
+            <div class="hint">Enquanto nenhum arquivo for carregado, aparece um selo com o nome da empresa.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAIS ================= -->
+<div class="modal-backdrop" id="modalConfirm">
+  <div class="modal">
+    <h3 id="confirmTitle">Confirmar</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-foot">
+      <button class="btn secondary" id="confirmNo">Cancelar</button>
+      <button class="btn" id="confirmYes">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalUser">
+  <form class="modal" id="userForm">
+    <h3 id="userModalTitle">Novo usuário</h3>
+    <input type="hidden" id="userId">
+    <div class="field"><label for="userUsername">Usuário (login)</label><input id="userUsername" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex: renata.couto">
+      <div class="hint">3 a 32 caracteres: letras minúsculas, números, ponto, hífen ou _. Não pode ser alterado depois.</div></div>
+    <div class="field"><label for="userNome">Nome</label><input id="userNome" placeholder="ex: Renata Couto"></div>
+    <div class="field"><label for="userRole">Perfil</label>
+      <select id="userRole"><option value="user">Usuário</option><option value="admin">Administrador</option></select></div>
+    <div class="field" id="userPassField"><label for="userPass">Senha inicial</label>
+      <div class="inline"><input id="userPass" autocomplete="new-password"><button type="button" class="btn secondary sm" id="btnGenPass">Gerar</button></div>
+      <div class="hint">Mínimo de 8 caracteres. Envie ao usuário por um canal seguro; ele pode trocar depois em "Alterar minha senha".</div></div>
+    <div class="modal-err" id="userErr"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn secondary" data-close="modalUser">Cancelar</button>
+      <button type="submit" class="btn" id="btnSaveUser">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="modalPass">
+  <form class="modal" id="passForm">
+    <h3 id="passTitle">Redefinir senha</h3>
+    <input type="hidden" id="passUserId">
+    <p id="passDesc" style="margin-bottom:12px;"></p>
+    <div class="field"><label for="passNew">Nova senha</label>
+      <div class="inline"><input id="passNew" autocomplete="new-password"><button type="button" class="btn secondary sm" id="btnGenPass2">Gerar</button></div>
+      <div class="hint">Mínimo de 8 caracteres.</div></div>
+    <div class="modal-err" id="passErr"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn secondary" data-close="modalPass">Cancelar</button>
+      <button type="submit" class="btn">Salvar senha</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ============================================================
+   Combinação Afya + Yduqs — Supabase (auth, histórico, config)
+   ============================================================ */
+const SUPABASE_URL = '__SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+const EMAIL_DOMAIN = 'usuarios.riafya.app';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'riafya-auth' }
+});
+
+const REF = { ydMc: 2853.3, afBrl: 5764.3, fx: 5.2034 }; // valores de referência (antes do 1º UPDATE)
+
+let ME = null;          // {id, username, nome, role}
+let CFG = { dividendos_padrao:{y:750,a:1160}, tickers:{yduqs:'YDUQ3',afya:'AFYA'}, acoes_mn:{yduqs:null,afya:null}, ptax_tipo:'venda', logos:{afya:'',yduqs:''} };
+let HIST = [];
+let CUR = null;         // última linha tipo 'update'
+let DIV = { y:750, a:1160 };
+let USERS = [];
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(v,d=1){ v = v==null ? null : Number(v); if(v===null||!isFinite(v)) return '—'; const r=parseFloat(v.toFixed(d)); return (r===0?0:r).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function pct(v,d=1){ return v===null||!isFinite(v) ? '—' : fmt(v*100,d)+'%'; }
+function parseBR(s){ s=String(s??'').trim(); if(!s) return null; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?null:n; }
+function fmtTs(iso){ return iso ? new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'; }
+function toast(m,ms=3200){ const t=$('toast'); t.textContent=m; t.hidden=false; clearTimeout(t._t); t._t=setTimeout(()=>t.hidden=true,ms); }
+function isAdmin(){ return ME && ME.role==='admin'; }
+function genPass(){
+  const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const r=crypto.getRandomValues(new Uint32Array(16));
+  return [0,1,2,3].map(g=>Array.from(r.slice(g*4,g*4+4),x=>a[x%a.length]).join('')).join('-');
+}
+function openModal(id){ $(id).classList.add('open'); }
+function closeModal(id){ $(id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', ()=> closeModal(b.dataset.close)));
+let _cr=null;
+function confirmBox(msg,title='Confirmar',okLabel='Confirmar'){
+  return new Promise(r=>{ _cr=r; $('confirmTitle').textContent=title; $('confirmMsg').textContent=msg; $('confirmYes').textContent=okLabel; openModal('modalConfirm'); });
+}
+$('confirmYes').onclick=()=>{ closeModal('modalConfirm'); _cr&&_cr(true); };
+$('confirmNo').onclick=()=>{ closeModal('modalConfirm'); _cr&&_cr(false); };
+
+async function callFn(name, body){
+  const { data, error } = await sb.functions.invoke(name, { body });
+  if(error){
+    let msg = error.message;
+    try{ const j = await error.context.json(); if(j && j.error) msg = j.error; }catch(e){}
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/* ---------- cálculo ---------- */
+function curState(){
+  if(CUR) return { ydMc:Number(CUR.yd_mc), afUsd:Number(CUR.af_usd), fx:Number(CUR.ptax) };
+  return { ydMc:REF.ydMc, afUsd:REF.afBrl/REF.fx, fx:REF.fx };
+}
+function compute(st, div){
+  const ydMc = st.ydMc, afBrl = st.afUsd*st.fx, total = ydMc+afBrl;
+  const ydPost = ydMc-div.y, afPost = afBrl-div.a, totPost = ydPost+afPost;
+  return { ydMc, afBrl, afUsd:st.afUsd, fx:st.fx, total, divT:div.y+div.a, ydPost, afPost, totPost,
+    rYCur:ydMc/total, rACur:afBrl/total, rYPost:ydPost/totPost, rAPost:afPost/totPost };
+}
+function logoHtml(which){
+  const src = which==='afya' ? CFG.logos?.afya : CFG.logos?.yduqs;
+  if(src) return `<span class="logo-slot"><img src="${esc(src)}" alt="${which==='afya'?'Afya':'Yduqs'}"></span>`;
+  return `<span class="mono-chip ${which}">${which==='afya'?'AFYA':'YDUQS'}</span>`;
+}
+
+/* ---------- render: visão ---------- */
+function renderTicker(){
+  $('tickerBar').innerHTML = `
+    <div><span class="k">PTAX</span><span class="v">${fmt(curState().fx,4)}</span></div>
+    <div><span class="k">${esc(CFG.tickers.yduqs)}</span><span class="v">${CUR&&CUR.yd_px!=null?'R$ '+fmt(CUR.yd_px,2):'—'}</span></div>
+    <div><span class="k">${esc(CFG.tickers.afya)}</span><span class="v">${CUR&&CUR.af_px!=null?'US$ '+fmt(CUR.af_px,2):'—'}</span></div>
+    <div><span class="k">Atualizado</span><span class="v" style="font-size:11.5px;">${CUR?fmtTs(CUR.created_at).slice(0,17):'referência'}</span></div>`;
+}
+function renderVisao(){
+  const c = compute(curState(), DIV);
+  const dp = CFG.dividendos_padrao;
+  $('kpiCards').innerHTML = [
+    {l:logoHtml('yduqs')+' Mkt Cap Yduqs', v:'R$ '+fmt(c.ydMc), f: CUR&&CUR.yd_px!=null?`${esc(CFG.tickers.yduqs)} a R$ ${fmt(CUR.yd_px,2)}`:'valor de referência'},
+    {l:logoHtml('afya')+' Mkt Cap Afya', v:'R$ '+fmt(c.afBrl), f:`US$ ${fmt(c.afUsd)} mn`+(CUR&&CUR.af_px!=null?` · ${esc(CFG.tickers.afya)} a US$ ${fmt(CUR.af_px,2)}`:'')},
+    {l:'Dólar PTAX', v:fmt(c.fx,4), f: CUR&&CUR.ptax_data?`PTAX ${esc(CUR.ptax_tipo||'venda')} de ${esc(CUR.ptax_data)}`:'valor de referência'},
+    {l:'Combined Company', v:'R$ '+fmt(c.total), f:`R$ ${fmt(c.totPost)} após dividendos`},
+  ].map(k=>`<div class="card" style="margin-bottom:0;"><div class="dm-label">${k.l}</div><div class="dm-value">${k.v}</div><div class="dm-foot">${k.f}</div></div>`).join('');
+
+  const ch = (v,d)=> Math.abs(v-d)>1e-9 ? ' changed' : '';
+  $('comboBody').innerHTML = `
+    <tr><td><div class="co-cell">${logoHtml('yduqs')} Yduqs</div></td>
+      <td class="num-cell">${fmt(c.ydMc)}</td>
+      <td class="num-cell"><input class="div-input${ch(DIV.y,dp.y)}" id="divY" data-div="y" inputmode="decimal" aria-label="Dividendos Yduqs" value="${fmt(DIV.y)}"></td>
+      <td class="num-cell">${fmt(c.ydPost)}</td>
+      <td class="num-cell muted">${fmt(c.ydMc/c.fx)}</td>
+      <td></td></tr>
+    <tr><td><div class="co-cell">${logoHtml('afya')} Afya</div></td>
+      <td class="num-cell">${fmt(c.afBrl)}</td>
+      <td class="num-cell"><input class="div-input${ch(DIV.a,dp.a)}" id="divA" data-div="a" inputmode="decimal" aria-label="Dividendos Afya" value="${fmt(DIV.a)}"></td>
+      <td class="num-cell">${fmt(c.afPost)}</td>
+      <td class="num-cell muted">${fmt(c.afUsd)}</td>
+      <td class="num-cell">${fmt(c.fx,4)}</td></tr>
+    <tr class="total"><td>Combined Company</td>
+      <td class="num-cell">${fmt(c.total)}</td>
+      <td class="num-cell">${fmt(c.divT)}</td>
+      <td class="num-cell">${fmt(c.totPost)}</td>
+      <td class="num-cell">${fmt(c.total/c.fx)}</td>
+      <td></td></tr>`;
+
+  const dpp = (a,b)=>{ const v=(b-a)*100; return `<span style="color:${v>=0?'var(--teal)':'var(--danger)'};">${v>=0?'+':''}${fmt(v,1)}</span>`; };
+  $('ratioBody').innerHTML = `
+    <tr><td><div class="co-cell">${logoHtml('yduqs')} Yduqs' Shareholders</div></td><td class="num-cell">${pct(c.rYCur)}</td><td class="num-cell">${pct(c.rYPost)}</td><td class="num-cell">${dpp(c.rYCur,c.rYPost)}</td></tr>
+    <tr><td><div class="co-cell">${logoHtml('afya')} Afya's Shareholders</div></td><td class="num-cell">${pct(c.rACur)}</td><td class="num-cell">${pct(c.rAPost)}</td><td class="num-cell">${dpp(c.rACur,c.rAPost)}</td></tr>
+    <tr class="total"><td>Combined Company</td><td class="num-cell">100,0%</td><td class="num-cell">100,0%</td><td></td></tr>`;
+  $('barCur').innerHTML = `<div class="y" style="width:${c.rYCur*100}%"></div><div class="a" style="width:${c.rACur*100}%"></div>`;
+  $('barPost').innerHTML = `<div class="y" style="width:${c.rYPost*100}%"></div><div class="a" style="width:${c.rAPost*100}%"></div>`;
+
+  const errs = CUR && Array.isArray(CUR.erros) ? CUR.erros : [];
+  $('statusLine').innerHTML = !CUR
+    ? 'Exibindo os valores de referência. Clique em <strong>UPDATE</strong> para buscar market caps e PTAX atuais.'
+    : `Última atualização: <strong>${fmtTs(CUR.created_at)}</strong> por <strong>${esc(CUR.usuario||'—')}</strong>` +
+      (errs.length ? `<br><span class="err">Falhas: ${errs.map(esc).join(' · ')}. Foi mantido o último valor disponível.</span>` : '');
+}
+
+/* ---------- render: histórico ---------- */
+function filteredHist(){
+  const t = $('histFilterTipo').value, u = $('histFilterUser').value;
+  return HIST.filter(r=> (!t || r.tipo===t) && (!u || r.usuario===u));
+}
+function renderHist(){
+  const users = [...new Set(HIST.map(r=>r.usuario).filter(Boolean))].sort();
+  const sel = $('histFilterUser'), prev = sel.value;
+  sel.innerHTML = `<option value="">Todos os usuários</option>` + users.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('');
+  if(users.includes(prev)) sel.value = prev;
+
+  const rows = filteredHist();
+  $('histCount').textContent = `${rows.length} registro(s)`;
+  const tbl = $('tblHist');
+  if(!rows.length){ tbl.innerHTML = `<tr><td><div class="empty-state">Nenhum registro ainda. Cada UPDATE grava uma linha aqui, com o nome de quem atualizou.</div></td></tr>`; return; }
+  const admin = isAdmin();
+  tbl.innerHTML = `
+    <tr>
+      <th class="sticky-col">Data / hora</th><th>Usuário</th><th>Tipo</th><th class="num">PTAX</th>
+      <th class="num">Mkt Cap Yduqs</th><th class="num">Mkt Cap Afya (US$)</th><th class="num">Mkt Cap Afya (R$)</th><th class="num">Combined</th>
+      <th class="num">Div. Yduqs</th><th class="num">Div. Afya</th><th class="num">Combined − Div.</th>
+      <th class="num">Yduqs % Cur.</th><th class="num">Afya % Cur.</th><th class="num">Yduqs % Post</th><th class="num">Afya % Post</th>${admin?'<th></th>':''}
+    </tr>
+    ${rows.map(r=>{
+      const c = compute({ydMc:Number(r.yd_mc), afUsd:Number(r.af_usd), fx:Number(r.ptax)}, {y:Number(r.div_y), a:Number(r.div_a)});
+      const errs = Array.isArray(r.erros) ? r.erros : [];
+      const tipo = r.tipo==='simulacao' ? '<span class="badge sim">simulação</span>'
+        : (errs.length ? `<span class="badge warn" title="${esc(errs.join(' · '))}">update parcial</span>` : '<span class="badge ok">update</span>');
+      return `<tr>
+        <td class="sticky-col" style="font-family:var(--font-mono);">${fmtTs(r.created_at)}</td>
+        <td>${esc(r.usuario||'—')}</td><td>${tipo}</td>
+        <td class="num-cell">${fmt(r.ptax,4)}</td>
+        <td class="num-cell">${fmt(c.ydMc)}</td><td class="num-cell">${fmt(c.afUsd)}</td><td class="num-cell">${fmt(c.afBrl)}</td><td class="num-cell"><strong>${fmt(c.total)}</strong></td>
+        <td class="num-cell">${fmt(r.div_y)}</td><td class="num-cell">${fmt(r.div_a)}</td><td class="num-cell">${fmt(c.totPost)}</td>
+        <td class="num-cell">${pct(c.rYCur)}</td><td class="num-cell">${pct(c.rACur)}</td><td class="num-cell">${pct(c.rYPost)}</td><td class="num-cell">${pct(c.rAPost)}</td>
+        ${admin?`<td style="text-align:right;"><button class="icon-btn" data-del-hist="${r.id}" title="Excluir registro" aria-label="Excluir registro">🗑</button></td>`:''}
+      </tr>`;
+    }).join('')}`;
+}
+
+/* ---------- render: usuários ---------- */
+function renderUsers(){
+  const tbl = $('tblUsers');
+  if(!USERS.length){ tbl.innerHTML = `<tr><td><div class="empty-state">Carregando usuários…</div></td></tr>`; return; }
+  tbl.innerHTML = `
+    <tr><th class="sticky-col">Usuário</th><th>Nome</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Criado em</th><th></th></tr>
+    ${USERS.map(u=>`
+      <tr>
+        <td class="sticky-col"><strong>${esc(u.username)}</strong>${u.id===ME.id?' <span class="muted">(você)</span>':''}</td>
+        <td>${esc(u.nome||'')}</td>
+        <td>${u.role==='admin'?'<span class="badge admin">administrador</span>':'<span class="badge off">usuário</span>'}</td>
+        <td>${u.ativo?'<span class="badge ok">ativo</span>':'<span class="badge warn">desativado</span>'}</td>
+        <td>${u.last_sign_in_at?fmtTs(u.last_sign_in_at).slice(0,17):'<span class="muted">nunca</span>'}</td>
+        <td>${fmtTs(u.created_at).slice(0,10)}</td>
+        <td style="text-align:right;white-space:nowrap;">
+          <button class="icon-btn" data-user-edit="${u.id}">Editar</button>
+          <button class="icon-btn" data-user-pass="${u.id}">Senha</button>
+          ${u.id!==ME.id?`<button class="icon-btn" data-user-toggle="${u.id}">${u.ativo?'Desativar':'Ativar'}</button>
+          <button class="icon-btn" data-user-del="${u.id}" aria-label="Excluir usuário">🗑</button>`:''}
+        </td>
+      </tr>`).join('')}`;
+}
+
+/* ---------- render: config ---------- */
+function renderCfg(){
+  const ro = !isAdmin();
+  $('cfgIntro').textContent = ro ? 'Valores usados por todos os usuários. Somente administradores podem alterar.' : 'Valores usados por todos os usuários. As alterações valem para todos depois de salvar.';
+  $('cfgDivY').value = fmt(CFG.dividendos_padrao.y);
+  $('cfgDivA').value = fmt(CFG.dividendos_padrao.a);
+  $('cfgYdTicker').value = CFG.tickers.yduqs;
+  $('cfgAfTicker').value = CFG.tickers.afya;
+  $('cfgYdShares').value = CFG.acoes_mn.yduqs!=null ? fmt(CFG.acoes_mn.yduqs,2) : '';
+  $('cfgAfShares').value = CFG.acoes_mn.afya!=null ? fmt(CFG.acoes_mn.afya,2) : '';
+  $('cfgPtaxTipo').value = CFG.ptax_tipo;
+  ['cfgDivY','cfgDivA','cfgYdTicker','cfgAfTicker','cfgYdShares','cfgAfShares','cfgPtaxTipo'].forEach(id=> $(id).disabled = ro);
+  $('prevAfya').innerHTML = logoHtml('afya');
+  $('prevYd').innerHTML = logoHtml('yduqs');
+}
+
+function renderAll(){ renderTicker(); renderVisao(); renderHist(); renderCfg(); if(isAdmin()) renderUsers(); }
+
+/* ---------- dados ---------- */
+async function loadConfig(){
+  const { data, error } = await sb.from('app_config').select('key,value');
+  if(error) throw error;
+  (data||[]).forEach(r=>{ CFG[r.key] = r.value; });
+  CFG.tickers = CFG.tickers || {yduqs:'YDUQ3',afya:'AFYA'};
+  CFG.acoes_mn = CFG.acoes_mn || {yduqs:null,afya:null};
+  CFG.logos = CFG.logos || {afya:'',yduqs:''};
+}
+async function loadHist(){
+  const { data, error } = await sb.from('historico').select('*').order('created_at',{ascending:false}).limit(2000);
+  if(error) throw error;
+  HIST = data || [];
+  CUR = HIST.find(r=>r.tipo==='update') || null;
+}
+async function loadUsers(){
+  if(!isAdmin()) return;
+  try{ const r = await callFn('admin-users', {action:'list'}); USERS = r.users || []; renderUsers(); }
+  catch(e){ $('tblUsers').innerHTML = `<tr><td><div class="empty-state">Não foi possível carregar os usuários: ${esc(e.message)}</div></td></tr>`; }
+}
+
+/* ---------- sessão ---------- */
+function showLogin(){ $('appView').hidden = true; $('loginView').hidden = false; setTimeout(()=> $('loginUser').focus(), 50); }
+async function startApp(session){
+  const { data: prof } = await sb.from('profiles').select('id,username,nome,role,ativo').eq('id', session.user.id).maybeSingle();
+  if(!prof || !prof.ativo){
+    await sb.auth.signOut();
+    showLogin(); $('loginErr').textContent = 'Seu acesso está desativado. Fale com o administrador.';
+    return;
+  }
+  ME = prof;
+  $('whoBox').innerHTML = `<strong>${esc(prof.nome||prof.username)}</strong>${esc(prof.username)} · ${prof.role==='admin'?'administrador':'usuário'}`;
+  document.querySelectorAll('[data-admin-only]').forEach(el=> el.hidden = !isAdmin());
+  $('loginView').hidden = true; $('appView').hidden = false;
+  try{ await Promise.all([loadConfig(), loadHist()]); }catch(e){ toast('Erro ao carregar dados: '+e.message, 6000); }
+  DIV = { y:Number(CFG.dividendos_padrao.y), a:Number(CFG.dividendos_padrao.a) };
+  renderAll();
+  loadUsers();
+}
+
+$('loginForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const user = $('loginUser').value.trim().toLowerCase(), pass = $('loginPass').value;
+  const err = $('loginErr'), btn = $('btnLogin');
+  if(!user || !pass){ err.textContent = 'Preencha usuário e senha.'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando…'; err.textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email: `${user}@${EMAIL_DOMAIN}`, password: pass });
+  btn.disabled = false; btn.textContent = 'Entrar';
+  if(error){
+    err.textContent = /banned/i.test(error.message) ? 'Seu acesso está desativado. Fale com o administrador.' : 'Usuário ou senha incorretos.';
+    const f=$('loginForm'); f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake');
+    return;
+  }
+  $('loginPass').value = '';
+  startApp(data.session);
+});
+
+document.querySelectorAll('[data-action="logout"]').forEach(b=> b.addEventListener('click', async ()=>{
+  await sb.auth.signOut(); ME=null; HIST=[]; USERS=[]; CUR=null; showLogin();
+}));
+document.querySelectorAll('[data-action="password"]').forEach(b=> b.addEventListener('click', ()=>{
+  $('passUserId').value = ''; $('passTitle').textContent = 'Alterar minha senha';
+  $('passDesc').textContent = 'Defina uma nova senha para o seu usuário.';
+  $('passNew').value = ''; $('passErr').textContent = ''; openModal('modalPass');
+}));
+
+/* ---------- UPDATE ---------- */
+$('btnUpdate').onclick = async ()=>{
+  const btn = $('btnUpdate');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Atualizando…';
+  try{
+    const r = await callFn('market-data', { div_y: DIV.y, div_a: DIV.a });
+    HIST.unshift(r.row); CUR = r.row;
+    renderAll();
+    toast(r.erros && r.erros.length ? 'Atualização parcial: veja os detalhes abaixo da tabela.' : 'Dados atualizados e gravados no histórico.', r.erros&&r.erros.length?5000:3000);
+  }catch(e){
+    toast('Não foi possível atualizar: '+e.message, 6000);
+  }finally{
+    btn.disabled = false; btn.innerHTML = '↻ UPDATE';
+  }
+};
+
+/* ---------- dividendos / simulação ---------- */
+$('comboBody').addEventListener('change', e=>{
+  const k = e.target.dataset.div; if(!k) return;
+  const v = parseBR(e.target.value);
+  DIV[k] = v===null ? 0 : v;
+  renderVisao();
+});
+$('comboBody').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.dataset.div) e.target.blur(); });
+$('btnResetDiv').onclick = ()=>{ DIV = { y:Number(CFG.dividendos_padrao.y), a:Number(CFG.dividendos_padrao.a) }; renderVisao(); toast('Dividendos restaurados para o padrão.'); };
+$('btnSaveSim').onclick = async ()=>{
+  const st = curState();
+  const row = { tipo:'simulacao', ptax:st.fx, ptax_data:CUR?CUR.ptax_data:null, ptax_tipo:CUR?CUR.ptax_tipo:null,
+    yd_mc:st.ydMc, yd_px:CUR?CUR.yd_px:null, af_usd:st.afUsd, af_px:CUR?CUR.af_px:null, div_y:DIV.y, div_a:DIV.a };
+  const { data, error } = await sb.from('historico').insert(row).select().single();
+  if(error){ toast('Não foi possível registrar: '+error.message, 5000); return; }
+  HIST.unshift(data); renderHist(); toast('Simulação registrada no histórico.');
+};
+
+/* ---------- histórico ---------- */
+$('histFilterTipo').onchange = renderHist;
+$('histFilterUser').onchange = renderHist;
+$('btnReloadHist').onclick = async ()=>{ try{ await loadHist(); renderAll(); toast('Histórico atualizado.'); }catch(e){ toast('Erro: '+e.message); } };
+$('tblHist').addEventListener('click', async e=>{
+  const id = e.target.dataset.delHist; if(!id) return;
+  if(!(await confirmBox('Excluir este registro do histórico? A exclusão vale para todos os usuários.','Excluir registro','Excluir'))) return;
+  const { error } = await sb.from('historico').delete().eq('id', id);
+  if(error){ toast('Não foi possível excluir: '+error.message); return; }
+  HIST = HIST.filter(h=> String(h.id)!==String(id)); CUR = HIST.find(r=>r.tipo==='update')||null; renderAll();
+});
+$('btnExportCsv').onclick = ()=>{
+  const rows = filteredHist();
+  if(!rows.length){ toast('Nada para exportar.'); return; }
+  const n = (v,d=1)=> (v==null||!isFinite(v)) ? '' : Number(v).toFixed(d).replace('.',',');
+  const head = ['Data/hora','Usuário','Tipo','PTAX','Data PTAX','Mkt Cap Yduqs (R$ mn)','Mkt Cap Afya (US$ mn)','Mkt Cap Afya (R$ mn)','Combined (R$ mn)','Div Yduqs','Div Afya','Combined - Div','Yduqs % Current','Afya % Current','Yduqs % Post Div','Afya % Post Div','Falhas'];
+  const lines = [...rows].reverse().map(r=>{
+    const c = compute({ydMc:Number(r.yd_mc), afUsd:Number(r.af_usd), fx:Number(r.ptax)},{y:Number(r.div_y),a:Number(r.div_a)});
+    const errs = Array.isArray(r.erros) ? r.erros.join(' | ') : '';
+    return [fmtTs(r.created_at), r.usuario||'', r.tipo, n(r.ptax,4), r.ptax_data||'', n(c.ydMc), n(c.afUsd), n(c.afBrl), n(c.total), n(r.div_y), n(r.div_a), n(c.totPost), n(c.rYCur*100,2), n(c.rACur*100,2), n(c.rYPost*100,2), n(c.rAPost*100,2), '"'+errs.replace(/"/g,'""')+'"'].join(';');
+  });
+  const blob = new Blob(['﻿'+[head.join(';'),...lines].join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `Historico_Afya_Yduqs_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+
+/* ---------- usuários (admin) ---------- */
+$('btnNovoUsuario').onclick = ()=>{
+  $('userModalTitle').textContent = 'Novo usuário';
+  $('userId').value=''; $('userUsername').value=''; $('userUsername').disabled=false;
+  $('userNome').value=''; $('userRole').value='user'; $('userPass').value=genPass();
+  $('userPassField').hidden=false; $('userErr').textContent='';
+  openModal('modalUser'); setTimeout(()=> $('userUsername').focus(), 50);
+};
+$('btnGenPass').onclick = ()=> $('userPass').value = genPass();
+$('btnGenPass2').onclick = ()=> $('passNew').value = genPass();
+
+$('tblUsers').addEventListener('click', async e=>{
+  const t = e.target;
+  const u = USERS.find(x=> x.id===(t.dataset.userEdit||t.dataset.userPass||t.dataset.userToggle||t.dataset.userDel));
+  if(!u) return;
+  if(t.dataset.userEdit){
+    $('userModalTitle').textContent = 'Editar usuário';
+    $('userId').value=u.id; $('userUsername').value=u.username; $('userUsername').disabled=true;
+    $('userNome').value=u.nome||''; $('userRole').value=u.role; $('userPassField').hidden=true; $('userErr').textContent='';
+    openModal('modalUser');
+  } else if(t.dataset.userPass){
+    $('passUserId').value=u.id; $('passTitle').textContent='Redefinir senha';
+    $('passDesc').textContent=`Nova senha para ${u.username}. Envie ao usuário por um canal seguro.`;
+    $('passNew').value=genPass(); $('passErr').textContent=''; openModal('modalPass');
+  } else if(t.dataset.userToggle){
+    const ativar = !u.ativo;
+    if(!(await confirmBox(ativar?`Reativar o acesso de ${u.username}?`:`Desativar ${u.username}? Ele não conseguirá mais entrar, mas os registros dele continuam no histórico.`, ativar?'Reativar usuário':'Desativar usuário', ativar?'Reativar':'Desativar'))) return;
+    try{ await callFn('admin-users',{action:'update', id:u.id, ativo:ativar}); toast(ativar?'Usuário reativado.':'Usuário desativado.'); loadUsers(); }
+    catch(err){ toast(err.message, 5000); }
+  } else if(t.dataset.userDel){
+    if(!(await confirmBox(`Excluir ${u.username} definitivamente? Os registros dele continuam no histórico com o nome de usuário.`,'Excluir usuário','Excluir'))) return;
+    try{ await callFn('admin-users',{action:'delete', id:u.id}); toast('Usuário excluído.'); loadUsers(); }
+    catch(err){ toast(err.message, 5000); }
+  }
+});
+
+$('userForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const id = $('userId').value, err = $('userErr');
+  err.textContent = '';
+  const btn = $('btnSaveUser'); btn.disabled = true;
+  try{
+    if(id){
+      await callFn('admin-users', {action:'update', id, nome:$('userNome').value, role:$('userRole').value});
+      toast('Usuário atualizado.');
+    } else {
+      const username = $('userUsername').value.trim().toLowerCase(), password = $('userPass').value;
+      await callFn('admin-users', {action:'create', username, nome:$('userNome').value.trim(), role:$('userRole').value, password});
+      try{ await navigator.clipboard.writeText(`Usuário: ${username}\nSenha: ${password}`); toast('Usuário criado. Login e senha copiados para enviar a ele.', 5000); }
+      catch(_){ toast('Usuário criado. Anote a senha antes de fechar.', 5000); }
+    }
+    closeModal('modalUser'); loadUsers();
+  }catch(ex){ err.textContent = ex.message; }
+  finally{ btn.disabled = false; }
+});
+
+$('passForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const id = $('passUserId').value, pw = $('passNew').value, err = $('passErr');
+  err.textContent = '';
+  if(pw.length < 8){ err.textContent = 'A senha precisa ter pelo menos 8 caracteres.'; return; }
+  try{
+    if(id){ await callFn('admin-users', {action:'set_password', id, password:pw}); }
+    else{ const { error } = await sb.auth.updateUser({ password: pw }); if(error) throw error; }
+    try{ await navigator.clipboard.writeText(pw); }catch(_){}
+    closeModal('modalPass'); toast(id ? 'Senha redefinida e copiada.' : 'Sua senha foi alterada.');
+  }catch(ex){ err.textContent = ex.message; }
+});
+
+/* ---------- configurações (admin) ---------- */
+async function saveConfigKeys(obj){
+  const rows = Object.entries(obj).map(([key,value])=>({key,value}));
+  const { error } = await sb.from('app_config').upsert(rows);
+  if(error) throw error;
+  Object.assign(CFG, obj);
+}
+$('btnSaveCfg').onclick = async ()=>{
+  const dy = parseBR($('cfgDivY').value), da = parseBR($('cfgDivA').value);
+  if(dy===null || da===null){ toast('Informe os dois dividendos padrão.'); return; }
+  const upd = {
+    dividendos_padrao: { y:dy, a:da },
+    tickers: { yduqs: $('cfgYdTicker').value.trim()||'YDUQ3', afya: $('cfgAfTicker').value.trim()||'AFYA' },
+    acoes_mn: { yduqs: parseBR($('cfgYdShares').value), afya: parseBR($('cfgAfShares').value) },
+    ptax_tipo: $('cfgPtaxTipo').value,
+  };
+  try{ await saveConfigKeys(upd); DIV = {y:dy, a:da}; renderAll(); toast('Configurações salvas para todos os usuários.'); }
+  catch(e){ toast('Não foi possível salvar: '+e.message, 5000); }
+};
+function wireLogo(inputId, key){
+  $(inputId).addEventListener('change', e=>{
+    const f = e.target.files[0]; if(!f) return;
+    if(f.size > 300*1024){ toast('Arquivo acima de 300 KB. Use uma versão menor do logo.'); e.target.value=''; return; }
+    const r = new FileReader();
+    r.onload = async ()=>{
+      try{ await saveConfigKeys({ logos: {...CFG.logos, [key]: r.result} }); renderAll(); toast('Logo salvo para todos os usuários.'); }
+      catch(err){ toast('Não foi possível salvar o logo: '+err.message, 5000); }
+    };
+    r.readAsDataURL(f);
+  });
+}
+wireLogo('logoAfyaFile','afya');
+wireLogo('logoYdFile','yduqs');
+$('btnClearLogos').onclick = async ()=>{
+  try{ await saveConfigKeys({ logos:{afya:'',yduqs:''} }); renderAll(); toast('Logos removidos.'); }
+  catch(e){ toast('Erro: '+e.message); }
+};
+
+/* ---------- navegação ---------- */
+function switchTab(tab){
+  document.querySelectorAll('[data-tab]').forEach(n=> n.classList.toggle('active', n.dataset.tab===tab));
+  document.querySelectorAll('.tab-panel').forEach(p=> p.classList.toggle('active', p.id==='tab-'+tab));
+  if(tab==='usuarios') loadUsers();
+}
+['sideNav','tabNav'].forEach(id=>{
+  $(id).addEventListener('click', e=>{ const n=e.target.closest('[data-tab]'); if(n) switchTab(n.dataset.tab); });
+  $(id).addEventListener('keydown', e=>{ if(e.key==='Enter'){ const n=e.target.closest('[data-tab],[data-action]'); if(n) n.click(); } });
+});
+
+/* ---------- init ---------- */
+(async ()=>{
+  const { data } = await sb.auth.getSession();
+  if(data.session) startApp(data.session); else showLogin();
+  sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_OUT' && ME){ ME=null; showLogin(); } });
+})();
+</script>
+</body>
+</html>
