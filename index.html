@@ -388,9 +388,7 @@ table.combo input.div-input.changed{background:var(--warn-soft);border-color:var
               <div class="field"><label for="cfgYdShares">Ações Yduqs (mn) — opcional</label><input id="cfgYdShares" inputmode="decimal" placeholder="vazio = market cap da brapi"></div>
               <div class="field"><label for="cfgAfShares">Ações Afya (mn) — opcional</label><input id="cfgAfShares" inputmode="decimal" placeholder="vazio = número da Finnhub"></div>
             </div>
-            <div class="field"><label for="cfgPtaxTipo">Cotação PTAX</label>
-              <select id="cfgPtaxTipo"><option value="venda">PTAX venda</option><option value="compra">PTAX compra</option></select></div>
-            <div class="hint">Os tokens da brapi e da Finnhub ficam guardados no servidor e não aparecem nesta página.</div>
+            <div class="hint">O dólar é a cotação spot USD/BRL do Yahoo Finance, buscada a cada UPDATE. Os tokens da brapi e da Finnhub ficam guardados no servidor e não aparecem nesta página.</div>
           </div>
           <div class="card">
             <div class="card-title"><span class="dot"></span>Logos</div>
@@ -474,7 +472,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 const REF = { ydMc: 2853.3, afBrl: 5764.3, fx: 5.2034 }; // valores de referência (antes do 1º UPDATE)
 
 let ME = null;          // {id, username, nome, role}
-let CFG = { dividendos_padrao:{y:750,a:1160}, tickers:{yduqs:'YDUQ3',afya:'AFYA'}, acoes_mn:{yduqs:null,afya:null}, ptax_tipo:'venda', logos:{afya:'',yduqs:''} };
+let CFG = { dividendos_padrao:{y:750,a:1160}, tickers:{yduqs:'YDUQ3',afya:'AFYA'}, acoes_mn:{yduqs:null,afya:null}, logos:{afya:'',yduqs:''} };
 let HIST = [];
 let CUR = null;         // última linha tipo 'update'
 let DIV = { y:750, a:1160 };
@@ -487,6 +485,8 @@ function fmt(v,d=1){ v = v==null ? null : Number(v); if(v===null||!isFinite(v)) 
 function pct(v,d=1){ return v===null||!isFinite(v) ? '—' : fmt(v*100,d)+'%'; }
 function parseBR(s){ s=String(s??'').trim(); if(!s) return null; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?null:n; }
 function fmtTs(iso){ return iso ? new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'; }
+function fxData(v){ if(!v) return ''; return /^\d{4}-\d{2}-\d{2}T/.test(v) ? fmtTs(v) : String(v); }
+function fxLabel(r){ const src = r.fx_fonte || 'cotação'; const d = fxData(r.fx_data); return d ? `${src} · ${d}` : src; }
 function toast(m,ms=3200){ const t=$('toast'); t.textContent=m; t.hidden=false; clearTimeout(t._t); t._t=setTimeout(()=>t.hidden=true,ms); }
 function isAdmin(){ return ME && ME.role==='admin'; }
 function genPass(){
@@ -516,7 +516,7 @@ async function callFn(name, body){
 
 /* ---------- cálculo ---------- */
 function curState(){
-  if(CUR) return { ydMc:Number(CUR.yd_mc), afUsd:Number(CUR.af_usd), fx:Number(CUR.ptax) };
+  if(CUR) return { ydMc:Number(CUR.yd_mc), afUsd:Number(CUR.af_usd), fx:Number(CUR.fx) };
   return { ydMc:REF.ydMc, afUsd:REF.afBrl/REF.fx, fx:REF.fx };
 }
 function compute(st, div){
@@ -534,7 +534,7 @@ function logoHtml(which){
 /* ---------- render: visão ---------- */
 function renderTicker(){
   $('tickerBar').innerHTML = `
-    <div><span class="k">PTAX</span><span class="v">${fmt(curState().fx,4)}</span></div>
+    <div><span class="k">Dólar spot</span><span class="v">${fmt(curState().fx,4)}</span></div>
     <div><span class="k">${esc(CFG.tickers.yduqs)}</span><span class="v">${CUR&&CUR.yd_px!=null?'R$ '+fmt(CUR.yd_px,2):'—'}</span></div>
     <div><span class="k">${esc(CFG.tickers.afya)}</span><span class="v">${CUR&&CUR.af_px!=null?'US$ '+fmt(CUR.af_px,2):'—'}</span></div>
     <div><span class="k">Atualizado</span><span class="v" style="font-size:11.5px;">${CUR?fmtTs(CUR.created_at).slice(0,17):'referência'}</span></div>`;
@@ -545,7 +545,7 @@ function renderVisao(){
   $('kpiCards').innerHTML = [
     {l:logoHtml('yduqs')+' Mkt Cap Yduqs', v:'R$ '+fmt(c.ydMc), f: CUR&&CUR.yd_px!=null?`${esc(CFG.tickers.yduqs)} a R$ ${fmt(CUR.yd_px,2)}`:'valor de referência'},
     {l:logoHtml('afya')+' Mkt Cap Afya', v:'R$ '+fmt(c.afBrl), f:`US$ ${fmt(c.afUsd)} mn`+(CUR&&CUR.af_px!=null?` · ${esc(CFG.tickers.afya)} a US$ ${fmt(CUR.af_px,2)}`:'')},
-    {l:'Dólar PTAX', v:fmt(c.fx,4), f: CUR&&CUR.ptax_data?`PTAX ${esc(CUR.ptax_tipo||'venda')} de ${esc(CUR.ptax_data)}`:'valor de referência'},
+    {l:'Dólar spot (USD/BRL)', v:fmt(c.fx,4), f: CUR?fxLabel(CUR):'valor de referência'},
     {l:'Combined Company', v:'R$ '+fmt(c.total), f:`R$ ${fmt(c.totPost)} após dividendos`},
   ].map(k=>`<div class="card" style="margin-bottom:0;"><div class="dm-label">${k.l}</div><div class="dm-value">${k.v}</div><div class="dm-foot">${k.f}</div></div>`).join('');
 
@@ -580,7 +580,7 @@ function renderVisao(){
 
   const errs = CUR && Array.isArray(CUR.erros) ? CUR.erros : [];
   $('statusLine').innerHTML = !CUR
-    ? 'Exibindo os valores de referência. Clique em <strong>UPDATE</strong> para buscar market caps e PTAX atuais.'
+    ? 'Exibindo os valores de referência. Clique em <strong>UPDATE</strong> para buscar market caps e dólar spot atuais.'
     : `Última atualização: <strong>${fmtTs(CUR.created_at)}</strong> por <strong>${esc(CUR.usuario||'—')}</strong>` +
       (errs.length ? `<br><span class="err">Falhas: ${errs.map(esc).join(' · ')}. Foi mantido o último valor disponível.</span>` : '');
 }
@@ -603,20 +603,20 @@ function renderHist(){
   const admin = isAdmin();
   tbl.innerHTML = `
     <tr>
-      <th class="sticky-col">Data / hora</th><th>Usuário</th><th>Tipo</th><th class="num">PTAX</th>
+      <th class="sticky-col">Data / hora</th><th>Usuário</th><th>Tipo</th><th class="num">Dólar</th>
       <th class="num">Mkt Cap Yduqs</th><th class="num">Mkt Cap Afya (US$)</th><th class="num">Mkt Cap Afya (R$)</th><th class="num">Combined</th>
       <th class="num">Div. Yduqs</th><th class="num">Div. Afya</th><th class="num">Combined − Div.</th>
       <th class="num">Yduqs % Cur.</th><th class="num">Afya % Cur.</th><th class="num">Yduqs % Post</th><th class="num">Afya % Post</th>${admin?'<th></th>':''}
     </tr>
     ${rows.map(r=>{
-      const c = compute({ydMc:Number(r.yd_mc), afUsd:Number(r.af_usd), fx:Number(r.ptax)}, {y:Number(r.div_y), a:Number(r.div_a)});
+      const c = compute({ydMc:Number(r.yd_mc), afUsd:Number(r.af_usd), fx:Number(r.fx)}, {y:Number(r.div_y), a:Number(r.div_a)});
       const errs = Array.isArray(r.erros) ? r.erros : [];
       const tipo = r.tipo==='simulacao' ? '<span class="badge sim">simulação</span>'
         : (errs.length ? `<span class="badge warn" title="${esc(errs.join(' · '))}">update parcial</span>` : '<span class="badge ok">update</span>');
       return `<tr>
         <td class="sticky-col" style="font-family:var(--font-mono);">${fmtTs(r.created_at)}</td>
         <td>${esc(r.usuario||'—')}</td><td>${tipo}</td>
-        <td class="num-cell">${fmt(r.ptax,4)}</td>
+        <td class="num-cell" title="${esc(fxLabel(r))}">${fmt(r.fx,4)}</td>
         <td class="num-cell">${fmt(c.ydMc)}</td><td class="num-cell">${fmt(c.afUsd)}</td><td class="num-cell">${fmt(c.afBrl)}</td><td class="num-cell"><strong>${fmt(c.total)}</strong></td>
         <td class="num-cell">${fmt(r.div_y)}</td><td class="num-cell">${fmt(r.div_a)}</td><td class="num-cell">${fmt(c.totPost)}</td>
         <td class="num-cell">${pct(c.rYCur)}</td><td class="num-cell">${pct(c.rACur)}</td><td class="num-cell">${pct(c.rYPost)}</td><td class="num-cell">${pct(c.rAPost)}</td>
@@ -658,8 +658,7 @@ function renderCfg(){
   $('cfgAfTicker').value = CFG.tickers.afya;
   $('cfgYdShares').value = CFG.acoes_mn.yduqs!=null ? fmt(CFG.acoes_mn.yduqs,2) : '';
   $('cfgAfShares').value = CFG.acoes_mn.afya!=null ? fmt(CFG.acoes_mn.afya,2) : '';
-  $('cfgPtaxTipo').value = CFG.ptax_tipo;
-  ['cfgDivY','cfgDivA','cfgYdTicker','cfgAfTicker','cfgYdShares','cfgAfShares','cfgPtaxTipo'].forEach(id=> $(id).disabled = ro);
+  ['cfgDivY','cfgDivA','cfgYdTicker','cfgAfTicker','cfgYdShares','cfgAfShares'].forEach(id=> $(id).disabled = ro);
   $('prevAfya').innerHTML = logoHtml('afya');
   $('prevYd').innerHTML = logoHtml('yduqs');
 }
@@ -759,7 +758,7 @@ $('comboBody').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.d
 $('btnResetDiv').onclick = ()=>{ DIV = { y:Number(CFG.dividendos_padrao.y), a:Number(CFG.dividendos_padrao.a) }; renderVisao(); toast('Dividendos restaurados para o padrão.'); };
 $('btnSaveSim').onclick = async ()=>{
   const st = curState();
-  const row = { tipo:'simulacao', ptax:st.fx, ptax_data:CUR?CUR.ptax_data:null, ptax_tipo:CUR?CUR.ptax_tipo:null,
+  const row = { tipo:'simulacao', fx:st.fx, fx_data:CUR?CUR.fx_data:null, fx_fonte:CUR?CUR.fx_fonte:'referência',
     yd_mc:st.ydMc, yd_px:CUR?CUR.yd_px:null, af_usd:st.afUsd, af_px:CUR?CUR.af_px:null, div_y:DIV.y, div_a:DIV.a };
   const { data, error } = await sb.from('historico').insert(row).select().single();
   if(error){ toast('Não foi possível registrar: '+error.message, 5000); return; }
@@ -781,11 +780,11 @@ $('btnExportCsv').onclick = ()=>{
   const rows = filteredHist();
   if(!rows.length){ toast('Nada para exportar.'); return; }
   const n = (v,d=1)=> (v==null||!isFinite(v)) ? '' : Number(v).toFixed(d).replace('.',',');
-  const head = ['Data/hora','Usuário','Tipo','PTAX','Data PTAX','Mkt Cap Yduqs (R$ mn)','Mkt Cap Afya (US$ mn)','Mkt Cap Afya (R$ mn)','Combined (R$ mn)','Div Yduqs','Div Afya','Combined - Div','Yduqs % Current','Afya % Current','Yduqs % Post Div','Afya % Post Div','Falhas'];
+  const head = ['Data/hora','Usuário','Tipo','Dólar (USD/BRL)','Horário da cotação','Fonte da cotação','Mkt Cap Yduqs (R$ mn)','Mkt Cap Afya (US$ mn)','Mkt Cap Afya (R$ mn)','Combined (R$ mn)','Div Yduqs','Div Afya','Combined - Div','Yduqs % Current','Afya % Current','Yduqs % Post Div','Afya % Post Div','Falhas'];
   const lines = [...rows].reverse().map(r=>{
-    const c = compute({ydMc:Number(r.yd_mc), afUsd:Number(r.af_usd), fx:Number(r.ptax)},{y:Number(r.div_y),a:Number(r.div_a)});
+    const c = compute({ydMc:Number(r.yd_mc), afUsd:Number(r.af_usd), fx:Number(r.fx)},{y:Number(r.div_y),a:Number(r.div_a)});
     const errs = Array.isArray(r.erros) ? r.erros.join(' | ') : '';
-    return [fmtTs(r.created_at), r.usuario||'', r.tipo, n(r.ptax,4), r.ptax_data||'', n(c.ydMc), n(c.afUsd), n(c.afBrl), n(c.total), n(r.div_y), n(r.div_a), n(c.totPost), n(c.rYCur*100,2), n(c.rACur*100,2), n(c.rYPost*100,2), n(c.rAPost*100,2), '"'+errs.replace(/"/g,'""')+'"'].join(';');
+    return [fmtTs(r.created_at), r.usuario||'', r.tipo, n(r.fx,4), fxData(r.fx_data), r.fx_fonte||'', n(c.ydMc), n(c.afUsd), n(c.afBrl), n(c.total), n(r.div_y), n(r.div_a), n(c.totPost), n(c.rYCur*100,2), n(c.rACur*100,2), n(c.rYPost*100,2), n(c.rAPost*100,2), '"'+errs.replace(/"/g,'""')+'"'].join(';');
   });
   const blob = new Blob(['﻿'+[head.join(';'),...lines].join('\n')], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -876,7 +875,6 @@ $('btnSaveCfg').onclick = async ()=>{
     dividendos_padrao: { y:dy, a:da },
     tickers: { yduqs: $('cfgYdTicker').value.trim()||'YDUQ3', afya: $('cfgAfTicker').value.trim()||'AFYA' },
     acoes_mn: { yduqs: parseBR($('cfgYdShares').value), afya: parseBR($('cfgAfShares').value) },
-    ptax_tipo: $('cfgPtaxTipo').value,
   };
   try{ await saveConfigKeys(upd); DIV = {y:dy, a:da}; renderAll(); toast('Configurações salvas para todos os usuários.'); }
   catch(e){ toast('Não foi possível salvar: '+e.message, 5000); }

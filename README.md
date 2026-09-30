@@ -7,7 +7,7 @@ Aplicação web para acompanhar o market cap combinado de Afya e Yduqs, os divid
 - **Front-end:** `index.html`, publicado no GitHub Pages. Funciona em computador, iPad e celular.
 - **Banco e login:** Supabase. O login é por usuário e senha, e só o administrador cria acessos, na aba **Usuários** do app.
 - **Dados de mercado:** a função `market-data` roda no servidor do Supabase. Ela busca:
-  - a PTAX no Banco Central,
+  - o dólar spot USD/BRL no Yahoo Finance, com a AwesomeAPI como reserva,
   - o market cap da Yduqs na brapi,
   - o market cap da Afya na Finnhub.
 
@@ -19,14 +19,15 @@ Aplicação web para acompanhar o market cap combinado de Afya e Yduqs, os divid
 |---|---|
 | `index.html` | App completo: login, visão, histórico, usuários e configurações |
 | `supabase/migrations/001_init.sql` | Tabelas, regras de acesso (RLS) e valores padrão |
+| `supabase/migrations/002_dolar_spot.sql` | Troca da PTAX pelo dólar spot |
 | `supabase/functions/market-data` | UPDATE: busca os dados de mercado e grava no histórico |
 | `supabase/functions/admin-users` | Gestão de usuários pelo administrador |
 
 ## Tabelas
 
 - `profiles`: usuário, nome, perfil (`admin`/`user`) e situação (ativo ou desativado).
-- `historico`: cada UPDATE ou simulação, com PTAX, market caps, dividendos, autor e falhas de fonte.
-- `app_config`: dividendos padrão, tickers, ações em circulação opcionais, tipo de PTAX e logos.
+- `historico`: cada UPDATE ou simulação, com dólar spot (valor, horário e fonte), market caps, dividendos, autor e falhas de fonte.
+- `app_config`: dividendos padrão, tickers, ações em circulação opcionais e logos.
 - `app_secrets`: tokens da brapi e da Finnhub. Não tem nenhuma policy, então só o servidor acessa.
 
 ## Permissões
