@@ -33,6 +33,7 @@ create table if not exists public.historico (
   erros       jsonb not null default '[]'::jsonb
 );
 create index if not exists historico_created_at_idx on public.historico (created_at desc);
+create index if not exists historico_user_id_idx on public.historico (user_id);
 
 -- ---------- Configurações do app (lidas por todos, editadas pelo admin) ----------
 create table if not exists public.app_config (
@@ -95,7 +96,7 @@ alter table public.app_secrets enable row level security;
 
 drop policy if exists "profiles: ver o próprio ou admin vê todos" on public.profiles;
 create policy "profiles: ver o próprio ou admin vê todos" on public.profiles
-  for select to authenticated using (id = auth.uid() or public.is_admin());
+  for select to authenticated using (id = (select auth.uid()) or public.is_admin());
 
 drop policy if exists "historico: usuários ativos leem" on public.historico;
 create policy "historico: usuários ativos leem" on public.historico
@@ -114,9 +115,25 @@ drop policy if exists "config: usuários ativos leem" on public.app_config;
 create policy "config: usuários ativos leem" on public.app_config
   for select to authenticated using (public.is_active_user());
 
-drop policy if exists "config: admin grava" on public.app_config;
-create policy "config: admin grava" on public.app_config
-  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "config: admin insere" on public.app_config;
+create policy "config: admin insere" on public.app_config
+  for insert to authenticated with check (public.is_admin());
+
+drop policy if exists "config: admin altera" on public.app_config;
+create policy "config: admin altera" on public.app_config
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "config: admin exclui" on public.app_config;
+create policy "config: admin exclui" on public.app_config
+  for delete to authenticated using (public.is_admin());
+
+-- funções auxiliares: só usuários logados executam; triggers ninguém chama direto
+revoke execute on function public.historico_set_user() from anon, authenticated, public;
+revoke execute on function public.app_config_touch() from anon, authenticated, public;
+revoke execute on function public.is_active_user() from anon, public;
+revoke execute on function public.is_admin() from anon, public;
+grant execute on function public.is_active_user() to authenticated;
+grant execute on function public.is_admin() to authenticated;
 
 -- ---------- Valores padrão ----------
 insert into public.app_config (key, value) values
@@ -126,3 +143,7 @@ insert into public.app_config (key, value) values
   ('ptax_tipo',         '"venda"'),
   ('logos',             '{"afya": "", "yduqs": ""}')
 on conflict (key) do nothing;
+
+-- Tokens das APIs (preencher uma vez, fora do controle de versão):
+-- insert into public.app_secrets (key, value) values ('brapi_token','...'), ('finnhub_token','...')
+--   on conflict (key) do update set value = excluded.value;
