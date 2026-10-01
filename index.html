@@ -219,7 +219,14 @@ table.combo input.div-input.changed{background:var(--warn-soft);border-color:var
 .rh-chart .axis-t{fill:var(--text-faint);font-family:var(--font-mono);font-size:10.5px;}
 .rh-chart .seg-t{font-family:var(--font-mono);font-size:11px;font-weight:600;fill:#fff;pointer-events:none;}
 .rh-chart .col-hit{fill:transparent;cursor:pointer;}
-.rh-chart .col-hit:hover, .rh-chart .col-hit.on{fill:rgba(34,27,32,.05);}
+.rh-ctrls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.seg-radio .seg-btn::before{display:none;}
+.seg-radio .seg-btn.active{background:var(--accent);color:#fff;box-shadow:none;}
+.rh-chart .col-hit:focus{outline:none;}
+.rh-chart.cols .col-hit:hover, .rh-chart.cols .col-hit.on{fill:rgba(34,27,32,.05);}
+.rh-chart .cross-l{stroke:var(--text-faint);stroke-width:1;stroke-dasharray:3 3;pointer-events:none;}
+.rh-chart .end-t{font-family:var(--font-mono);font-size:11px;font-weight:600;fill:var(--text);font-variant-numeric:tabular-nums;}
+.rh-chart .end-t .end-m{fill:var(--text-faint);font-weight:500;font-size:10px;}
 .rh-tip{position:fixed;z-index:150;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;box-shadow:0 8px 24px rgba(60,30,45,.15);min-width:190px;}
 .rh-tip .d{font-weight:600;margin-bottom:6px;}
 .rh-tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums;}
@@ -356,15 +363,21 @@ table.combo input.div-input.changed{background:var(--warn-soft);border-color:var
         <div class="card" id="ratioHistCard">
           <div class="card-title" style="justify-content:space-between;">
             <span style="display:flex;align-items:center;gap:8px;"><span class="dot"></span>Histórico da relação de troca · fechamento diário</span>
-            <div class="seg" role="group" aria-label="Base da relação de troca (pode marcar as duas)">
+            <div class="rh-ctrls">
+              <div class="seg seg-radio" role="radiogroup" aria-label="Tipo de gráfico">
+                <button type="button" class="seg-btn active" role="radio" data-rh-type="line" aria-checked="true">Linhas</button>
+                <button type="button" class="seg-btn" role="radio" data-rh-type="cols" aria-checked="false">Colunas</button>
+              </div>
+              <div class="seg" role="group" aria-label="Base da relação de troca (pode marcar as duas)">
               <button type="button" class="seg-btn active" data-rh-mode="cur" aria-pressed="true">Current</button>
               <button type="button" class="seg-btn" data-rh-mode="post" aria-pressed="false">Post Div.</button>
+              </div>
             </div>
           </div>
           <div class="rh-legend" id="rhLegend"></div>
           <div class="rh-scroll" id="rhScroll"><div id="rhChart" class="rh-chart"></div></div>
           <div class="rh-tip" id="rhTip" hidden></div>
-          <p class="hint">Cada coluna usa o último UPDATE feito no dia (horário de Brasília). Simulações não entram no gráfico. "Post Div." usa os dividendos gravados naquele UPDATE. Marque Current e Post Div. juntos para ver as duas colunas lado a lado: Current em tom claro, Post Div. na cor normal.</p>
+          <p class="hint" id="rhHint">Cada ponto é o último UPDATE feito no dia (horário de Brasília). Simulações não entram no gráfico. "Post Div." usa os dividendos gravados naquele UPDATE. Com Current e Post Div. marcados, Current aparece em tom claro e Post Div. na cor normal. O eixo vertical acompanha a faixa dos dados.</p>
           <details class="rh-table">
             <summary>Ver os valores em tabela</summary>
             <div class="table-wrap"><table id="rhTable"></table></div>
@@ -715,6 +728,7 @@ function renderCfg(){
 
 /* ---------- gráfico: relação de troca no fechamento de cada dia ---------- */
 let RH_SEL = { cur: true, post: false };
+let RH_TYPE = 'line';
 const TZ = 'America/Sao_Paulo';
 const dayKey = iso => new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso));
 const dayLabel = k => { const [y,m,d] = k.split('-'); return `${d}/${m}`; };
@@ -731,7 +745,7 @@ function dailyClose(){
     return { k, r, cur:{y:c.rYCur, a:c.rACur}, post:{y:c.rYPost, a:c.rAPost} };
   });
 }
-function renderRatioHist(){
+function renderRatioCols(){
   const box = $('rhChart'), days = dailyClose();
   const tbl = $('rhTable');
   if(!days.length){
@@ -828,6 +842,120 @@ function renderRatioHist(){
     [...days].reverse().map(d=>`<tr><td>${dayLabel(d.k)}/${d.k.slice(0,4)}</td><td>${hourLabel(d.r.created_at)} · ${esc(d.r.usuario||'—')}</td>
       <td class="num-cell">${pct(d.cur.y)}</td><td class="num-cell">${pct(d.cur.a)}</td><td class="num-cell">${pct(d.post.y)}</td><td class="num-cell">${pct(d.post.a)}</td></tr>`).join('');
 }
+function renderRatioLines(){
+  const box = $('rhChart'), days = dailyClose();
+  const tbl = $('rhTable');
+  if(!days.length){
+    box.innerHTML = `<div class="rh-empty">Ainda não há atualizações para montar o gráfico.<br>Clique em <strong>UPDATE</strong> e o fechamento de hoje aparece aqui.</div>`;
+    $('rhLegend').innerHTML = ''; tbl.innerHTML = ''; return;
+  }
+  const css = getComputedStyle(document.documentElement);
+  const BASE = { y: css.getPropertyValue('--yd').trim(), a: css.getPropertyValue('--accent').trim() };
+  const LIGHT = { y: '#7F9BE6', a: '#E57AA0' };   // tons claros validados (daltonismo e contraste)
+  const SURF = css.getPropertyValue('--surface').trim() || '#FFFFFF';
+  const modes = ['cur','post'].filter(m => RH_SEL[m]);
+  const both = modes.length === 2;
+  const colorOf = m => (both && m === 'cur') ? LIGHT : BASE;
+  const NAME = { cur: 'Current', post: 'Post Div.' };
+
+  // legenda
+  $('rhLegend').innerHTML = both
+    ? `<span><i style="background:${LIGHT.y}"></i>Yduqs · Current</span><span><i style="background:${LIGHT.a}"></i>Afya · Current</span><span><i style="background:${BASE.y}"></i>Yduqs · Post Div.</span><span><i style="background:${BASE.a}"></i>Afya · Post Div.</span>`
+    : `<span><i style="background:${BASE.y}"></i>Yduqs' Shareholders</span><span><i style="background:${BASE.a}"></i>Afya's Shareholders</span><span class="muted">· ${NAME[modes[0]]}</span>`;
+
+  // séries: Yduqs e Afya para cada base marcada
+  const series = [];
+  modes.forEach(m => ['y','a'].forEach(e => series.push({ m, e, color: colorOf(m)[e], name: `${e==='y'?'Yduqs':'Afya'}${both?' · '+NAME[m]:''}`, vals: days.map(d => d[m][e]) })));
+
+  // eixo y: faixa dos dados com folga, arredondada em 5 p.p.
+  const all = series.flatMap(s => s.vals);
+  let lo = Math.floor((Math.min(...all)*100 - 3)/5)*5, hi = Math.ceil((Math.max(...all)*100 + 3)/5)*5;
+  lo = Math.max(0, lo); hi = Math.min(100, hi);
+  const step = (hi - lo) > 40 ? 10 : 5;
+
+  const avail = Math.max(280, $('rhScroll').clientWidth);
+  const endLabelW = 92;
+  const padL = 40, padR = endLabelW, padT = 14, padB = 28, H = 280;
+  const minSlot = avail < 560 ? Math.max(8, Math.min(14, (avail - padL - padR - 24) / Math.max(1, days.length-1))) : 44;   // no celular os pontos se aproximam antes de rolar
+  const W = Math.max(avail, padL + padR + Math.max(1, days.length-1)*minSlot + 24);
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = days.length;
+  const xAt = i => n === 1 ? padL + plotW/2 : padL + 12 + i * ((plotW - 24) / (n - 1));
+  const y = v => padT + (1 - ((v*100 - lo) / (hi - lo))) * plotH;
+  const labelEvery = Math.ceil(n / Math.max(1, Math.floor(plotW/56)));
+
+  let g = '';
+  for(let t = lo; t <= hi + 1e-9; t += step){
+    g += `<line class="grid-l" x1="${padL}" x2="${W-padR+6}" y1="${y(t/100)}" y2="${y(t/100)}"/>`;
+    g += `<text class="axis-t" x="${padL-6}" y="${y(t/100)+3.5}" text-anchor="end">${t}%</text>`;
+  }
+  // rótulos do eixo x contados a partir do último dia, para nunca sobrepor
+  days.forEach((d,i)=>{ if((n-1-i) % labelEvery === 0) g += `<text class="axis-t" x="${xAt(i)}" y="${H-8}" text-anchor="middle">${dayLabel(d.k)}</text>`; });
+  g += `<line id="rhCross" class="cross-l" x1="0" x2="0" y1="${padT}" y2="${padT+plotH}" visibility="hidden"/>`;
+
+  // linhas de 2px; marcadores de 8px com anel da cor da superfície
+  series.forEach(s => {
+    const pts = s.vals.map((v,i)=> `${xAt(i).toFixed(1)},${y(v).toFixed(1)}`);
+    if(n > 1) g += `<polyline points="${pts.join(' ')}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const r = n > 30 ? 0 : 4;
+    if(r) s.vals.forEach((v,i)=> g += `<circle cx="${xAt(i)}" cy="${y(v)}" r="${r}" fill="${s.color}" stroke="${SURF}" stroke-width="2"/>`);
+  });
+  // rótulos diretos no último ponto (afastados se colidirem)
+  const ends = series.map(s => ({ s, v: s.vals[n-1], yy: y(s.vals[n-1]) })).sort((a,b)=> a.yy - b.yy);
+  for(let i=1;i<ends.length;i++) if(ends[i].yy - ends[i-1].yy < 13) ends[i].yy = ends[i-1].yy + 13;
+  ends.forEach(e => {
+    const lx = xAt(n-1) + 9;
+    g += `<text class="end-t" x="${lx}" y="${e.yy+4}"><tspan style="fill:${e.s.color}">●</tspan> ${fmt(e.v*100,1)}%${both?` <tspan class="end-m">${e.s.m==='cur'?'Cur.':'Post'}</tspan>`:''}</text>`;
+  });
+  // áreas de toque: uma faixa vertical por dia
+  days.forEach((d,i)=>{
+    const x0 = n===1 ? padL : (i===0 ? padL : (xAt(i-1)+xAt(i))/2);
+    const x1 = n===1 ? padL+plotW : (i===n-1 ? padL+plotW : (xAt(i)+xAt(i+1))/2);
+    const aria = modes.map(m=>`${NAME[m]}: Yduqs ${fmt(d[m].y*100,1)}%, Afya ${fmt(d[m].a*100,1)}%`).join('; ');
+    g += `<rect class="col-hit" data-i="${i}" x="${x0}" y="${padT}" width="${x1-x0}" height="${plotH}" tabindex="0" aria-label="${dayLabel(d.k)}. ${aria}"/>`;
+  });
+  box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Relação de troca no fechamento de cada dia, gráfico de linhas">${g}</svg>`;
+  $('rhScroll').scrollLeft = $('rhScroll').scrollWidth;
+
+  const tip = $('rhTip'), cross = box.querySelector('#rhCross');
+  const show = (el, evt) => {
+    const i = +el.dataset.i, d = days[i];
+    cross.setAttribute('x1', xAt(i)); cross.setAttribute('x2', xAt(i)); cross.setAttribute('visibility','visible');
+    tip.innerHTML = `<div class="d">${dayLabel(d.k)}/${d.k.slice(0,4)}</div>` + modes.map(m=>{
+      const v = d[m], col = colorOf(m);
+      return `<div class="h">${NAME[m]}</div>
+        <div class="r"><span><span class="sw" style="background:${col.y}"></span>Yduqs</span><strong>${fmt(v.y*100,1)}%</strong></div>
+        <div class="r"><span><span class="sw" style="background:${col.a}"></span>Afya</span><strong>${fmt(v.a*100,1)}%</strong></div>`;
+    }).join('') + `<div class="m">UPDATE das ${hourLabel(d.r.created_at)} por ${esc(d.r.usuario||'—')}</div>`;
+    tip.hidden = false;
+    const rect = el.getBoundingClientRect();
+    const px = evt && evt.clientX ? evt.clientX : rect.left + rect.width/2;
+    const tw = tip.offsetWidth;
+    let left = px + 14; if(left + tw > window.innerWidth - 8) left = px - tw - 14;
+    tip.style.left = Math.max(8,left)+'px';
+    tip.style.top = Math.max(8, rect.top + 20)+'px';
+  };
+  const hide = () => { tip.hidden = true; cross.setAttribute('visibility','hidden'); };
+  box.querySelectorAll('.col-hit').forEach(el=>{
+    el.addEventListener('mousemove', e=> show(el, e));
+    el.addEventListener('mouseleave', hide);
+    el.addEventListener('focus', ()=> show(el));
+    el.addEventListener('blur', hide);
+    el.addEventListener('click', e=> show(el, e));
+  });
+
+  tbl.innerHTML = `<tr><th>Dia</th><th>UPDATE usado</th><th class="num">Yduqs Current</th><th class="num">Afya Current</th><th class="num">Yduqs Post Div.</th><th class="num">Afya Post Div.</th></tr>` +
+    [...days].reverse().map(d=>`<tr><td>${dayLabel(d.k)}/${d.k.slice(0,4)}</td><td>${hourLabel(d.r.created_at)} · ${esc(d.r.usuario||'—')}</td>
+      <td class="num-cell">${pct(d.cur.y)}</td><td class="num-cell">${pct(d.cur.a)}</td><td class="num-cell">${pct(d.post.y)}</td><td class="num-cell">${pct(d.post.a)}</td></tr>`).join('');
+}
+// tipo de gráfico: linhas (padrão) ou colunas 100% empilhadas
+const RH_HINT = { line: 'Cada ponto é o último UPDATE feito no dia (horário de Brasília). Simulações não entram no gráfico. "Post Div." usa os dividendos gravados naquele UPDATE. Com Current e Post Div. marcados, Current aparece em tom claro e Post Div. na cor normal. O eixo vertical acompanha a faixa dos dados.', cols: 'Cada coluna usa o último UPDATE feito no dia (horário de Brasília). Simulações não entram no gráfico. "Post Div." usa os dividendos gravados naquele UPDATE. Com Current e Post Div. marcados, as colunas ficam lado a lado: Current em tom claro, Post Div. na cor normal.' };
+function renderRatioHist(){
+  $('rhChart').className = 'rh-chart ' + RH_TYPE;
+  $('rhHint').textContent = RH_HINT[RH_TYPE];
+  $('rhTip').hidden = true;
+  return RH_TYPE === 'cols' ? renderRatioCols() : renderRatioLines();
+}
 // seleção múltipla: Current, Post Div. ou os dois (sempre ao menos um marcado)
 document.querySelectorAll('[data-rh-mode]').forEach(b=> b.addEventListener('click', ()=>{
   const m = b.dataset.rhMode;
@@ -835,6 +963,12 @@ document.querySelectorAll('[data-rh-mode]').forEach(b=> b.addEventListener('clic
   if(!next.cur && !next.post){ toast('Deixe pelo menos uma opção marcada.'); return; }
   RH_SEL = next;
   document.querySelectorAll('[data-rh-mode]').forEach(x=>{ const on = !!RH_SEL[x.dataset.rhMode]; x.classList.toggle('active',on); x.setAttribute('aria-pressed',on); });
+  renderRatioHist();
+}));
+// alterna entre gráfico de linhas e de colunas
+document.querySelectorAll('[data-rh-type]').forEach(b=> b.addEventListener('click', ()=>{
+  RH_TYPE = b.dataset.rhType;
+  document.querySelectorAll('[data-rh-type]').forEach(x=>{ const on = x===b; x.classList.toggle('active',on); x.setAttribute('aria-checked',on); });
   renderRatioHist();
 }));
 let _rhT; window.addEventListener('resize', ()=>{ clearTimeout(_rhT); _rhT = setTimeout(()=>{ if(ME) renderRatioHist(); }, 150); });
