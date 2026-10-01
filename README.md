@@ -20,6 +20,7 @@ Aplicação web para acompanhar o market cap combinado de Afya e Yduqs, os divid
 | `index.html` | App completo: login, visão, histórico, usuários e configurações |
 | `supabase/migrations/001_init.sql` | Tabelas, regras de acesso (RLS) e valores padrão |
 | `supabase/migrations/002_dolar_spot.sql` | Troca da PTAX pelo dólar spot |
+| `assets/` | Logo e ícones da Afya (favicon e ícone da tela de início) |
 | `supabase/functions/market-data` | UPDATE: busca os dados de mercado e grava no histórico |
 | `supabase/functions/admin-users` | Gestão de usuários pelo administrador |
 

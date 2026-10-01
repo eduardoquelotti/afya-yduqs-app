@@ -8,6 +8,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Afya + Yduqs">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="theme-color" content="#FAF7F5">
 <title>RI Control · Afya + Yduqs</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -18,7 +21,7 @@
   --text:#221B20; --text-dim:#6E6570; --text-faint:#9C93A0;
   --accent:#D31C5B; --accent-dim:#A81548; --accent-soft:rgba(211,28,91,.08);
   --teal:#0D9488; --teal-soft:rgba(13,148,136,.10);
-  --yd:#1E3A8A; --yd-soft:rgba(30,58,138,.08);
+  --yd:#2B56C6; --yd-soft:rgba(43,86,198,.09);
   --danger:#DC2626; --danger-soft:rgba(220,38,38,.10);
   --warn:#D97706; --warn-soft:rgba(217,118,6,.12);
   --radius:10px;
@@ -55,6 +58,7 @@ body{
 .login .brand{padding:0 0 22px;margin-bottom:22px;}
 .brand-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-dim));
   display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;color:#fff;font-size:14px;flex-shrink:0;}
+.brand-logo{width:34px;height:auto;flex-shrink:0;display:block;}
 .brand-text .t1{font-family:var(--font-display);font-weight:700;font-size:15px;}
 .brand-text .t2{font-size:11px;color:var(--text-faint);font-family:var(--font-mono);letter-spacing:.5px;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--text-dim);font-size:13.5px;font-weight:500;transition:.12s;}
@@ -198,6 +202,33 @@ table.combo input.div-input.changed{background:var(--warn-soft);border-color:var
   table.combo input.div-input{font-size:16px;padding:8px;}
   input,select{font-size:16px;}
 }
+/* histórico da relação de troca */
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--surface-2);}
+.seg-btn{background:none;border:none;padding:6px 12px;font-family:var(--font-body);font-size:12px;color:var(--text-dim);cursor:pointer;}
+.seg-btn.active{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 0 0 1px var(--border);}
+.seg-btn::before{content:"";display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px;border:1.5px solid var(--text-faint);border-radius:3px;background:var(--surface);}
+.seg-btn.active::before{border-color:var(--accent);background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 5.2l2 2 4-4.4' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/9px no-repeat;}
+.seg-btn + .seg-btn{border-left:1px solid var(--border);}
+.rh-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11.5px;color:var(--text-dim);margin:0 0 10px;}
+.rh-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;}
+.seg-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+.rh-scroll{overflow-x:auto;position:relative;}
+.rh-chart{min-height:280px;}
+.rh-chart svg{display:block;}
+.rh-chart .grid-l{stroke:var(--border-soft);stroke-width:1;}
+.rh-chart .axis-t{fill:var(--text-faint);font-family:var(--font-mono);font-size:10.5px;}
+.rh-chart .seg-t{font-family:var(--font-mono);font-size:11px;font-weight:600;fill:#fff;pointer-events:none;}
+.rh-chart .col-hit{fill:transparent;cursor:pointer;}
+.rh-chart .col-hit:hover, .rh-chart .col-hit.on{fill:rgba(34,27,32,.05);}
+.rh-tip{position:fixed;z-index:150;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;box-shadow:0 8px 24px rgba(60,30,45,.15);min-width:190px;}
+.rh-tip .d{font-weight:600;margin-bottom:6px;}
+.rh-tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums;}
+.rh-tip .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+.rh-tip .m{color:var(--text-faint);font-size:11px;margin-top:6px;}
+.rh-tip .h{color:var(--text-faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;font-family:var(--font-mono);margin:6px 0 2px;}
+.rh-table{margin-top:10px;font-size:12.5px;}
+.rh-table summary{cursor:pointer;color:var(--text-dim);font-size:12px;}
+.rh-empty{display:flex;align-items:center;justify-content:center;min-height:200px;color:var(--text-faint);text-align:center;padding:20px;line-height:1.6;}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
@@ -207,7 +238,7 @@ table.combo input.div-input.changed{background:var(--warn-soft);border-color:var
 <div id="loginView" hidden>
   <form class="login" id="loginForm" autocomplete="on">
     <div class="brand">
-      <div class="brand-mark">RI</div>
+      <img class="brand-logo" src="assets/logo-afya.png" alt="Afya" width="34" height="29">
       <div class="brand-text"><div class="t1">RI Control</div><div class="t2">AFYA + YDUQS</div></div>
     </div>
     <h1>Entrar</h1>
@@ -223,7 +254,7 @@ table.combo input.div-input.changed{background:var(--warn-soft);border-color:var
 <div id="appView" hidden>
   <div class="sidebar">
     <div class="brand">
-      <div class="brand-mark">RI</div>
+      <img class="brand-logo" src="assets/logo-afya.png" alt="Afya" width="34" height="29">
       <div class="brand-text"><div class="t1">RI Control</div><div class="t2">AFYA + YDUQS</div></div>
     </div>
     <div id="sideNav">
@@ -320,6 +351,24 @@ table.combo input.div-input.changed{background:var(--warn-soft);border-color:var
           </div>
           <div class="legend"><span class="ly">Yduqs' Shareholders</span><span class="la">Afya's Shareholders</span></div>
           <div class="status-line" id="statusLine"></div>
+        </div>
+
+        <div class="card" id="ratioHistCard">
+          <div class="card-title" style="justify-content:space-between;">
+            <span style="display:flex;align-items:center;gap:8px;"><span class="dot"></span>Histórico da relação de troca · fechamento diário</span>
+            <div class="seg" role="group" aria-label="Base da relação de troca (pode marcar as duas)">
+              <button type="button" class="seg-btn active" data-rh-mode="cur" aria-pressed="true">Current</button>
+              <button type="button" class="seg-btn" data-rh-mode="post" aria-pressed="false">Post Div.</button>
+            </div>
+          </div>
+          <div class="rh-legend" id="rhLegend"></div>
+          <div class="rh-scroll" id="rhScroll"><div id="rhChart" class="rh-chart"></div></div>
+          <div class="rh-tip" id="rhTip" hidden></div>
+          <p class="hint">Cada coluna usa o último UPDATE feito no dia (horário de Brasília). Simulações não entram no gráfico. "Post Div." usa os dividendos gravados naquele UPDATE. Marque Current e Post Div. juntos para ver as duas colunas lado a lado: Current em tom claro, Post Div. na cor normal.</p>
+          <details class="rh-table">
+            <summary>Ver os valores em tabela</summary>
+            <div class="table-wrap"><table id="rhTable"></table></div>
+          </details>
         </div>
       </div>
 
@@ -591,6 +640,7 @@ function filteredHist(){
   return HIST.filter(r=> (!t || r.tipo===t) && (!u || r.usuario===u));
 }
 function renderHist(){
+  if($('rhChart') && ME) renderRatioHist();
   const users = [...new Set(HIST.map(r=>r.usuario).filter(Boolean))].sort();
   const sel = $('histFilterUser'), prev = sel.value;
   sel.innerHTML = `<option value="">Todos os usuários</option>` + users.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('');
@@ -662,6 +712,133 @@ function renderCfg(){
   $('prevAfya').innerHTML = logoHtml('afya');
   $('prevYd').innerHTML = logoHtml('yduqs');
 }
+
+/* ---------- gráfico: relação de troca no fechamento de cada dia ---------- */
+let RH_SEL = { cur: true, post: false };
+const TZ = 'America/Sao_Paulo';
+const dayKey = iso => new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso));
+const dayLabel = k => { const [y,m,d] = k.split('-'); return `${d}/${m}`; };
+const hourLabel = iso => new Date(iso).toLocaleTimeString('pt-BR',{timeZone:TZ,hour:'2-digit',minute:'2-digit'});
+function dailyClose(){
+  const byDay = new Map();
+  for(const r of HIST){
+    if(r.tipo!=='update') continue;
+    const k = dayKey(r.created_at), prev = byDay.get(k);
+    if(!prev || r.created_at > prev.created_at) byDay.set(k, r);
+  }
+  return [...byDay.entries()].sort((a,b)=> a[0]<b[0]?-1:1).map(([k,r])=>{
+    const c = compute({ydMc:Number(r.yd_mc), afUsd:Number(r.af_usd), fx:Number(r.fx)}, {y:Number(r.div_y), a:Number(r.div_a)});
+    return { k, r, cur:{y:c.rYCur, a:c.rACur}, post:{y:c.rYPost, a:c.rAPost} };
+  });
+}
+function renderRatioHist(){
+  const box = $('rhChart'), days = dailyClose();
+  const tbl = $('rhTable');
+  if(!days.length){
+    box.innerHTML = `<div class="rh-empty">Ainda não há atualizações para montar o gráfico.<br>Clique em <strong>UPDATE</strong> e o fechamento de hoje aparece aqui.</div>`;
+    tbl.innerHTML = ''; return;
+  }
+  const css = getComputedStyle(document.documentElement);
+  const BASE = { y: css.getPropertyValue('--yd').trim(), a: css.getPropertyValue('--accent').trim() };
+  const LIGHT = { y: '#7F9BE6', a: '#E57AA0' };   // tons claros validados (daltonismo e contraste)
+  const modes = ['cur','post'].filter(m => RH_SEL[m]);
+  const both = modes.length === 2;
+  const colorOf = m => (both && m === 'cur') ? LIGHT : BASE;
+  const NAME = { cur: 'Current', post: 'Post Div.' };
+  // texto dentro do segmento: branco ou tinta escura conforme a luminância da cor
+  const lum = h => { const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
+  const ink = h => (1.05/(lum(h)+.05)) >= 4.5 ? '#FFFFFF' : '#221B20';
+
+  // legenda
+  $('rhLegend').innerHTML = both
+    ? `<span><i style="background:${LIGHT.y}"></i>Yduqs · Current</span><span><i style="background:${LIGHT.a}"></i>Afya · Current</span><span><i style="background:${BASE.y}"></i>Yduqs · Post Div.</span><span><i style="background:${BASE.a}"></i>Afya · Post Div.</span>`
+    : `<span><i style="background:${BASE.y}"></i>Yduqs' Shareholders</span><span><i style="background:${BASE.a}"></i>Afya's Shareholders</span><span class="muted">· ${NAME[modes[0]]}</span>`;
+
+  const avail = Math.max(280, $('rhScroll').clientWidth);
+  const padL = 40, padR = 8, padT = 10, padB = 28, H = 280;
+  const PAIR_GAP = 4;
+  const minSlot = both ? 58 : 34;
+  const W = Math.max(avail, padL + padR + days.length*minSlot);
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const slot = plotW / days.length;
+  const k = modes.length;
+  const bw = Math.min(56, Math.max(both ? 12 : 14, (slot*0.66 - (k-1)*PAIR_GAP) / k));
+  const groupW = k*bw + (k-1)*PAIR_GAP;
+  const y = v => padT + (1 - v) * plotH;
+  const GAP = 2, R = 4;
+  const labelEvery = Math.ceil(days.length / Math.max(1, Math.floor(plotW/52)));
+  let g = '';
+  for(const t of [0,.25,.5,.75,1]){
+    g += `<line class="grid-l" x1="${padL}" x2="${W-padR}" y1="${y(t)}" y2="${y(t)}"/>`;
+    g += `<text class="axis-t" x="${padL-6}" y="${y(t)+3.5}" text-anchor="end">${t*100}%</text>`;
+  }
+  // coluna com cantos de 4px apenas nas extremidades externas
+  const segPath = (x, y0, y1, roundTop, roundBot) => {
+    const h = y1 - y0; if(h <= 0) return '';
+    const rt = roundTop ? Math.min(R, h/2, bw/2) : 0, rb = roundBot ? Math.min(R, h/2, bw/2) : 0;
+    return `M${x},${y0+rt} Q${x},${y0} ${x+rt},${y0} L${x+bw-rt},${y0} Q${x+bw},${y0} ${x+bw},${y0+rt} L${x+bw},${y1-rb} Q${x+bw},${y1} ${x+bw-rb},${y1} L${x+rb},${y1} Q${x},${y1} ${x},${y1-rb} Z`;
+  };
+  const fits = bw >= 34;
+  days.forEach((d,i)=>{
+    const cx = padL + slot*i + slot/2, gx = cx - groupW/2;
+    modes.forEach((m, j)=>{
+      const v = d[m], col = colorOf(m), x = gx + j*(bw + PAIR_GAP), mx = x + bw/2;
+      // Afya na base, Yduqs no topo; 2px de superfície entre os segmentos
+      const yTopA = y(v.a), yBase = y(0), yTopY = y(1), yBotY = yTopA - GAP;
+      g += `<path d="${segPath(x, yTopA, yBase, false, true)}" fill="${col.a}"/>`;
+      g += `<path d="${segPath(x, yTopY, yBotY, true, false)}" fill="${col.y}"/>`;
+      if(fits && (yBase - yTopA) > 18) g += `<text class="seg-t" style="fill:${ink(col.a)}" x="${mx}" y="${(yTopA+yBase)/2+4}" text-anchor="middle">${fmt(v.a*100,1)}%</text>`;
+      if(fits && (yBotY - yTopY) > 18) g += `<text class="seg-t" style="fill:${ink(col.y)}" x="${mx}" y="${(yTopY+yBotY)/2+4}" text-anchor="middle">${fmt(v.y*100,1)}%</text>`;
+    });
+    if(i % labelEvery === 0 || i === days.length-1) g += `<text class="axis-t" x="${cx}" y="${H-8}" text-anchor="middle">${dayLabel(d.k)}</text>`;
+    const aria = modes.map(m=>`${NAME[m]}: Yduqs ${fmt(d[m].y*100,1)}%, Afya ${fmt(d[m].a*100,1)}%`).join('; ');
+    g += `<rect class="col-hit" data-i="${i}" x="${padL+slot*i}" y="${padT}" width="${slot}" height="${plotH}" tabindex="0" aria-label="${dayLabel(d.k)}. ${aria}"/>`;
+  });
+  box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Relação de troca no fechamento de cada dia, colunas 100% empilhadas">${g}</svg>`;
+  $('rhScroll').scrollLeft = $('rhScroll').scrollWidth;
+
+  const tip = $('rhTip');
+  const show = (el, evt) => {
+    box.querySelectorAll('.col-hit.on').forEach(n=>n.classList.remove('on')); el.classList.add('on');
+    const d = days[+el.dataset.i];
+    tip.innerHTML = `<div class="d">${dayLabel(d.k)}/${d.k.slice(0,4)}</div>` + modes.map(m=>{
+      const v = d[m], col = colorOf(m);
+      return `<div class="h">${NAME[m]}</div>
+        <div class="r"><span><span class="sw" style="background:${col.y}"></span>Yduqs</span><strong>${fmt(v.y*100,1)}%</strong></div>
+        <div class="r"><span><span class="sw" style="background:${col.a}"></span>Afya</span><strong>${fmt(v.a*100,1)}%</strong></div>`;
+    }).join('') + `<div class="m">UPDATE das ${hourLabel(d.r.created_at)} por ${esc(d.r.usuario||'—')}</div>`;
+    tip.hidden = false;
+    const rect = el.getBoundingClientRect();
+    const px = evt && evt.clientX ? evt.clientX : rect.left + rect.width/2;
+    const tw = tip.offsetWidth;
+    let left = px + 14; if(left + tw > window.innerWidth - 8) left = px - tw - 14;
+    tip.style.left = Math.max(8,left)+'px';
+    tip.style.top = Math.max(8, rect.top + 20)+'px';
+  };
+  const hide = () => { tip.hidden = true; box.querySelectorAll('.col-hit.on').forEach(n=>n.classList.remove('on')); };
+  box.querySelectorAll('.col-hit').forEach(el=>{
+    el.addEventListener('mousemove', e=> show(el, e));
+    el.addEventListener('mouseleave', hide);
+    el.addEventListener('focus', ()=> show(el));
+    el.addEventListener('blur', hide);
+    el.addEventListener('click', e=> show(el, e));
+  });
+
+  tbl.innerHTML = `<tr><th>Dia</th><th>UPDATE usado</th><th class="num">Yduqs Current</th><th class="num">Afya Current</th><th class="num">Yduqs Post Div.</th><th class="num">Afya Post Div.</th></tr>` +
+    [...days].reverse().map(d=>`<tr><td>${dayLabel(d.k)}/${d.k.slice(0,4)}</td><td>${hourLabel(d.r.created_at)} · ${esc(d.r.usuario||'—')}</td>
+      <td class="num-cell">${pct(d.cur.y)}</td><td class="num-cell">${pct(d.cur.a)}</td><td class="num-cell">${pct(d.post.y)}</td><td class="num-cell">${pct(d.post.a)}</td></tr>`).join('');
+}
+// seleção múltipla: Current, Post Div. ou os dois (sempre ao menos um marcado)
+document.querySelectorAll('[data-rh-mode]').forEach(b=> b.addEventListener('click', ()=>{
+  const m = b.dataset.rhMode;
+  const next = { ...RH_SEL, [m]: !RH_SEL[m] };
+  if(!next.cur && !next.post){ toast('Deixe pelo menos uma opção marcada.'); return; }
+  RH_SEL = next;
+  document.querySelectorAll('[data-rh-mode]').forEach(x=>{ const on = !!RH_SEL[x.dataset.rhMode]; x.classList.toggle('active',on); x.setAttribute('aria-pressed',on); });
+  renderRatioHist();
+}));
+let _rhT; window.addEventListener('resize', ()=>{ clearTimeout(_rhT); _rhT = setTimeout(()=>{ if(ME) renderRatioHist(); }, 150); });
+document.addEventListener('scroll', ()=>{ const t=$('rhTip'); if(t) t.hidden = true; }, true);
 
 function renderAll(){ renderTicker(); renderVisao(); renderHist(); renderCfg(); if(isAdmin()) renderUsers(); }
 
